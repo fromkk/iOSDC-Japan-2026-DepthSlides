@@ -10,6 +10,8 @@ public struct SlideConfiguration {
     ProfileSlide()
     HowCameraWorks()
     BokehOptics()
+    PinholeCameraSimulation()
+    ConvexLensSimulation()
     PortraitModeLimits()
     DepthBasedApproach()
     ModelComparison()
