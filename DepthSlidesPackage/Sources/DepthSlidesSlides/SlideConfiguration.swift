@@ -8,6 +8,13 @@ public struct SlideConfiguration {
   public let slideIndexController = SlideIndexController {
     TitleSlide()
     ProfileSlide()
+    HowCameraWorks()
+    BokehOptics()
+    PortraitModeLimits()
+    DepthBasedApproach()
+    ModelComparison()
+    BokehBlurComparison()
+    Summary()
   }
 
   public init() {}
