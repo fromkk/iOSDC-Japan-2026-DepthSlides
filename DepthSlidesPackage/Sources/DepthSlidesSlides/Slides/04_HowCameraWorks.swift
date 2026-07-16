@@ -1,0 +1,32 @@
+import MarkdownToSlide
+import SlideKit
+import SwiftUI
+
+@Slide
+struct HowCameraWorks: View {
+  let converter = MarkdownToSlideConverter()
+
+  var body: some View {
+    SlideWrapper {
+      converter.convertPage(
+        """
+        # カメラの仕組み
+        """
+      )
+    }
+  }
+
+  var script: String = """
+    そもそもカメラの仕組みについて振り返ってみようと思います。
+    カメラってどうやってできているでしょうか？
+    レンズがあって、センサーがあって、それを記録する、と言ってしまえばそれまでなんですが、ここではもう少しだけ踏み込んでみようと思います。
+    """
+
+  var transition: AnyTransition = AnyTransition(AwesomeTransition())
+}
+
+#Preview {
+  SlidePreview {
+    HowCameraWorks()
+  }
+}

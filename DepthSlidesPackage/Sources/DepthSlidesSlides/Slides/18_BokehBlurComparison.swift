@@ -8,11 +8,10 @@ struct BokehBlurComparison: View {
 
   var body: some View {
     SlideWrapper {
+      // TODO: どう違うのか Simulator を作って比較する
       converter.convertPage(
         """
-        # ボケ生成：CIFilterのBlur系比較
-
-        深度マップが得られたあと、それをどう「ボケ」として描画するかも品質を左右します。
+        # 様々なボケを試して最適なものを選ぶ
 
         - CIBoxBlur
         - CIDiscBlur
@@ -27,8 +26,8 @@ struct BokehBlurComparison: View {
   }
 
   var script: String = """
-    深度マップが得られたあと、それをどう「ボケ」として描画するかも品質を左右する要素です。
-    Core ImageのBlur系フィルタ、CIBoxBlur、CIDiscBlur、CIGaussianBlur、CIMaskedVariableBlur、CIZoomBlur、CIMotionBlur、CIBokehBlurを深度ベースのボケ描画に使って、それぞれの見え方を比較しました。
+    最後に、ボケの作り方です。Core Image には CIBoxBlur、CIDiscBlur、CIGaussianBlur、CIMaskedVariableBlur、CIZoomBlur、CIMotionBlur、CIBokehBlur と、様々なブラーのフィルターが用意されています。
+    これもどう違うのか、シミュレーターを作って比較してみます。
     """
 
   var transition: AnyTransition = AnyTransition(AwesomeTransition())
