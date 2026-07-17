@@ -7,13 +7,12 @@ struct HowCameraWorks: View {
   let converter = MarkdownToSlideConverter()
 
   var body: some View {
-    SlideWrapper {
-      converter.convertPage(
-        """
-        # カメラの仕組み
-        """
-      )
+    HStack(alignment: .center) {
+      Text("# カメラの仕組み")
+        .font(SlideTheme.default.headingH1Font)
+        .frame(maxWidth: .infinity, alignment: .center)
     }
+    .padding(SlideTheme.default.contentPadding)
   }
 
   var script: String = """

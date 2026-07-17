@@ -7,16 +7,17 @@ struct CameraObscuraOrigin: View {
   let converter = MarkdownToSlideConverter()
 
   var body: some View {
-    SlideWrapper {
-      converter.convertPage(
-        """
-        # カメラの元祖
+    HeaderSlide("## カメラの元祖") {
+      Spacer()
 
-        ![カメラ・オブスキュラのイメージ図](https://upload.wikimedia.org/wikipedia/commons/8/85/1646_Athanasius_Kircher_-_Camera_obscura.jpg)
-
-        [出典: Wikimedia Commons](https://commons.wikimedia.org/wiki/File:1646_Athanasius_Kircher_-_Camera_obscura.jpg)
-        """
-      )
+      Text("出典: https://commons.wikimedia.org/wiki/File:1646_Athanasius_Kircher_-_Camera_obscura.jpg")
+        .font(.system(size: 32))
+    }
+    .background {
+      Image(.cameraObscura)
+        .resizable()
+        .aspectRatio(contentMode: .fit)
+        .padding(.bottom, 120)
     }
   }
 

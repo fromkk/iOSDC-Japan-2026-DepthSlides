@@ -7,14 +7,18 @@ struct TitleSlide: View {
   var shouldHideIndex: Bool { true }
 
   var body: some View {
-    SlideWrapper {
-      let converter = MarkdownToSlideConverter()
-      converter.convertPage(
-        """
-        # 複数の深度推定モデルを比較して、iPhoneで撮影した写真のボケをミラーレス級に近づける
-        """
-      )
+    HStack(alignment: .center) {
+      VStack(alignment: .leading, spacing: 120) {
+        Text("複数の深度推定モデルを比較して、iPhoneで撮影した写真のボケをミラーレス級に近づける")
+          .font(SlideTheme.default.headingH1Font)
+
+        Text("iOSDC Japan 2026 @fromkk")
+          .font(SlideTheme.default.headingH2Font)
+          .foregroundStyle(SlideTheme.default.secondaryTextColor)
+          .frame(maxWidth: .infinity, alignment: .trailing)
+      }
     }
+    .padding(SlideTheme.default.contentPadding)
   }
 
   var script: String = """
