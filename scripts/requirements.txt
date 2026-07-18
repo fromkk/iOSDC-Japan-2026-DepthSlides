@@ -1,0 +1,11 @@
+coremltools>=8.0
+huggingface_hub>=0.26
+torch>=2.4
+onnx>=1.16
+onnx2torch>=1.5
+requests>=2.32
+# coremltools 8/9 系は numpy>=2 環境だと定数畳み込み時に
+# `TypeError: only 0-dimensional arrays can be converted to Python scalars`
+# で落ちる既知の非互換があるため、numpy を 1.x に固定する。
+numpy<2
+scipy<1.13

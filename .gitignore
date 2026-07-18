@@ -7,3 +7,14 @@ DerivedData/
 .swiftpm/xcode/package.xcworkspace/contents.xcworkspacedata
 .netrc
 Package.resolved
+
+# ダウンロード・変換された Core ML モデル（scripts/ で生成、サイズが大きいためコミットしない）
+DepthSlidesPackage/Sources/DepthSlidesSlides/Models/*
+!DepthSlidesPackage/Sources/DepthSlidesSlides/Models/.gitkeep
+
+# scripts/ 用の Python 仮想環境・キャッシュ
+scripts/.venv/
+scripts/__pycache__/
+**/__pycache__/
+*.pyc
+.pytest_cache/

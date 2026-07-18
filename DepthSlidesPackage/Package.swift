@@ -36,6 +36,9 @@ let package = Package(
       dependencies: [
         "MarkdownToSlide",
         .product(name: "SlideKit", package: "SlideKit"),
+      ],
+      resources: [
+        .copy("Models")
       ]
     ),
     .testTarget(
