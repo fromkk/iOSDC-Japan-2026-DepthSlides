@@ -7,19 +7,30 @@ struct DepthDataAcquisition: View {
   let converter = MarkdownToSlideConverter()
 
   var body: some View {
-    SlideWrapper {
-      // TODO: AVDepthData を取得するコードと深度画像（Depth Image）を載せる
-      converter.convertPage(
-        """
-        # 写真に含まれる深度情報を取得
+    HStack {
+      SlideWrapper {
+        converter.convertPage(
+          """
+          # 写真に含まれる深度情報を取得
 
-        ```swift
-        // TODO: AVDepthData を取得するコード
-        ```
+          ```swift
+          let source = CGImageSourceCreateWithData(data as CFData, nil)!
+          let info = CGImageSourceCopyAuxiliaryDataInfoAtIndex(
+            source, 0, kCGImageAuxiliaryDataTypeDisparity
+          ) as! [AnyHashable: Any]
 
-        （Depth Image）
-        """
-      )
+          let depthData = try AVDepthData(fromDictionaryRepresentation: info)
+          let converted = depthData.converting(
+            toDepthDataType: kCVPixelFormatType_DisparityFloat32
+          )
+          let depthImage = CIImage(cvPixelBuffer: converted.depthDataMap)
+          ```
+          """
+        )
+      }
+
+      DepthImagePickerView()
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
   }
 
