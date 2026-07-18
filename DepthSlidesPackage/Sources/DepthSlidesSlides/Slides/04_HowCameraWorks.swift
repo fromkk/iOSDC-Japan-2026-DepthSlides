@@ -8,7 +8,7 @@ struct HowCameraWorks: View {
 
   var body: some View {
     HStack(alignment: .center) {
-      Text("# カメラの仕組み")
+      Text("カメラの仕組み")
         .font(SlideTheme.default.headingH1Font)
         .frame(maxWidth: .infinity, alignment: .center)
     }

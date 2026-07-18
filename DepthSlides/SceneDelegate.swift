@@ -32,9 +32,11 @@
       let store = (UIApplication.shared.delegate as? AppDelegate)?.store
 
       window = UIWindow(windowScene: windowScene)
+      window?.overrideUserInterfaceStyle = .light
       window?.rootViewController = UIHostingController(
         rootView: SlideNavigationView(configuration: configuration, store: store)
           .slideTheme(theme)
+          .preferredColorScheme(.light)
       )
       window?.makeKeyAndVisible()
     }

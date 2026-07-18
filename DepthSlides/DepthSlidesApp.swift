@@ -25,6 +25,7 @@ struct DepthSlidesApp: App {
         }
       }
       .slideTheme(theme)
+      .preferredColorScheme(.light)
     }
     #if os(macOS)
       .windowStyle(.hiddenTitleBar)
@@ -39,7 +40,9 @@ struct DepthSlidesApp: App {
           slideIndexController: Self.configuration.slideIndexController
         ) {
           SlideRouterView(slideIndexController: Self.configuration.slideIndexController)
+            .background(theme.backgroundColor)
         }
+        .preferredColorScheme(.light)
       }
     #endif
   }

@@ -9,7 +9,7 @@ struct CameraObscuraOrigin: View {
     case second
   }
 
-  @PhaseWrapper var phase: SlidePhase
+  @Phase var phase: SlidePhase
 
   var body: some View {
     Group {
@@ -17,7 +17,6 @@ struct CameraObscuraOrigin: View {
       case .initial:
         HeaderSlide("カメラの元祖") {
           Spacer()
-
           Text(
             "出典: https://commons.wikimedia.org/wiki/File:1646_Athanasius_Kircher_-_Camera_obscura.jpg"
           )
@@ -31,7 +30,11 @@ struct CameraObscuraOrigin: View {
         }
       case .second:
         HeaderSlide("Camera Obscura") {
-
+          Spacer()
+          Text(
+            "出典: https://commons.wikimedia.org/wiki/File:Camera_Obscura_box18thCentury.jpg"
+          )
+          .font(.system(size: 32))
         }
         .background {
           Image(.cameraObscura2)

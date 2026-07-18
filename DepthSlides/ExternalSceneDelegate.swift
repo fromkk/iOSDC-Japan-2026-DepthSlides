@@ -49,7 +49,9 @@
       let contentView = PresentationView(slideSize: configuration.size) {
         SlideRouterView(slideIndexController: configuration.slideIndexController)
       }
+      .preferredColorScheme(.light)
       let window = UIWindow(windowScene: scene)
+      window.overrideUserInterfaceStyle = .light
       window.rootViewController = UIHostingController(rootView: contentView)
       window.makeKeyAndVisible()
       self.window = window
