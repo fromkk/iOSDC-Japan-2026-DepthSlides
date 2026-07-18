@@ -11,6 +11,10 @@ struct CameraObscuraProblem: View {
       converter.convertPage(
         """
         # カメラ・オブスキュラの問題
+        
+        - 光量が少ない
+          - 対策としてレンズを利用
+          - 虫眼鏡のような凸レンズがよく利用された
         """
       )
     }
