@@ -23,6 +23,7 @@ public struct SlideConfiguration {
     DepthDataAcquisition()
     ModelComparison()
     ModelUsageNotes()
+    DepthModelSimulator()
     BokehBlurComparison()
     Summary()
     SaitamaSwiftPR()

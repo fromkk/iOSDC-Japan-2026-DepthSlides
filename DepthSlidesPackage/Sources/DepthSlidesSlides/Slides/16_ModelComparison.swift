@@ -8,7 +8,6 @@ struct ModelComparison: View {
 
   var body: some View {
     SlideWrapper {
-      // TODO: どう違うのか Simulator を作って比較する
       converter.convertPage(
         """
         # 配布されている ML モデルを利用して深度を推定する

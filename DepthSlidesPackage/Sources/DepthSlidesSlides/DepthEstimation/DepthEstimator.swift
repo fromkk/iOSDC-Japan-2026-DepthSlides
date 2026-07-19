@@ -10,6 +10,14 @@ enum DepthEstimationError: Error {
   case imageRenderFailed
 }
 
+/// `DepthEstimator.estimateCached(cgImage:model:cacheKey:)` のキャッシュキー。
+/// 同じ画像データ・同じモデルであれば同一キーになり、2回目以降は推論を
+/// 実行せずキャッシュ済みの結果をそのまま返す。
+struct DepthCacheKey: Hashable {
+  let imageData: Data
+  let model: DepthModel
+}
+
 /// Core ML の深度推定モデルを読み込み・実行して、深度マップを `CGImage` として
 /// 取得するための actor。モデルごとに入出力の形（ImageType / MultiArrayType、
 /// 相対深度 / メートル単位の絶対深度など）が異なるため、モデルの種類に応じて
@@ -26,9 +34,29 @@ actor DepthEstimator {
   static let shared = DepthEstimator()
 
   private var compiledModels: [DepthModel: MLModel] = [:]
+  private var depthImageCache: [DepthCacheKey: CGImage] = [:]
   private let context = CIContext()
 
   func estimate(cgImage: CGImage, model: DepthModel) async throws -> CGImage {
+    try await runInference(cgImage: cgImage, model: model)
+  }
+
+  /// `estimate(cgImage:model:)` と同じ推論を行うが、`cacheKey` に対する結果を
+  /// キャッシュし、同じ画像・同じモデルの組み合わせであれば2回目以降は
+  /// 推論をスキップして即座に返す。呼び出し側（`DepthModelCompareView`）が
+  /// 画像データから `DepthCacheKey` を1回だけ組み立てて渡す想定。
+  func estimateCached(cgImage: CGImage, model: DepthModel, cacheKey: DepthCacheKey) async throws
+    -> CGImage
+  {
+    if let cached = depthImageCache[cacheKey] {
+      return cached
+    }
+    let result = try await runInference(cgImage: cgImage, model: model)
+    depthImageCache[cacheKey] = result
+    return result
+  }
+
+  private func runInference(cgImage: CGImage, model: DepthModel) async throws -> CGImage {
     let mlModel = try await loadModel(model)
     switch model {
     case .depthPro:
@@ -140,7 +168,8 @@ actor DepthEstimator {
       throw DepthEstimationError.unsupportedOutputFeature
     }
 
-    let depthImage = try Self.normalizedGrayscaleImage(from: depthMeters)
+    let depthImage = try Self.normalizedGrayscaleImage(
+      from: depthMeters, invertForNearBright: true)
     let restored = depthImage.resized(
       to: CGSize(width: cgImage.width, height: cgImage.height))
     guard let outputImage = context.createCGImage(restored, from: restored.extent) else {
@@ -181,7 +210,7 @@ actor DepthEstimator {
       throw DepthEstimationError.unsupportedOutputFeature
     }
 
-    let depthImage = try Self.normalizedGrayscaleImage(from: depth)
+    let depthImage = try Self.normalizedGrayscaleImage(from: depth, invertForNearBright: true)
     let restored = depthImage.resized(
       to: CGSize(width: cgImage.width, height: cgImage.height))
     guard let outputImage = context.createCGImage(restored, from: restored.extent) else {
@@ -238,7 +267,18 @@ actor DepthEstimator {
   }
 
   /// メートル単位・生スコアなどの MultiArray を min-max 正規化してグレースケール画像にする。
-  private static func normalizedGrayscaleImage(from multiArray: MLMultiArray) throws -> CIImage {
+  ///
+  /// - Parameter invertForNearBright: モデルの生の出力値が「視差 (disparity)」
+  ///   （近いほど値が大きい）ではなく「実際の深度」（近いほど値が小さい）を
+  ///   表す場合に `true` を指定する。`DepthImagePickerView` の AVDepthData 由来の
+  ///   視差可視化や、Apple 配布の Depth Anything V2 Small・MiDaS の生スコアは
+  ///   視差系（近い=明るい）なので `false` のままでよいが、Depth Pro の
+  ///   `depthMeters`（実測メートル）や Depth Anything V3 の `depth`（点群の
+  ///   unprojection に使う実深度）はそのまま min-max 正規化すると近い場所ほど
+  ///   暗く写り、他モデルと明暗が反転してしまうため `true` にして反転する。
+  private static func normalizedGrayscaleImage(
+    from multiArray: MLMultiArray, invertForNearBright: Bool = false
+  ) throws -> CIImage {
     let shape = multiArray.shape.map(\.intValue)
     guard shape.count >= 2 else { throw DepthEstimationError.unsupportedOutputFeature }
     let height = shape[shape.count - 2]
@@ -297,7 +337,10 @@ actor DepthEstimator {
     let range = max(maxValue - minValue, .leastNonzeroMagnitude)
     var bytes = [UInt8](repeating: 0, count: width * height)
     for index in 0..<(width * height) {
-      let normalized = (floatValues[index] - minValue) / range
+      var normalized = (floatValues[index] - minValue) / range
+      if invertForNearBright {
+        normalized = 1 - normalized
+      }
       bytes[index] = UInt8(max(0, min(255, normalized * 255)))
     }
 
