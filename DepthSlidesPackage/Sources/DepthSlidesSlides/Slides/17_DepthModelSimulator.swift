@@ -4,22 +4,15 @@ import SwiftUI
 
 @Slide
 struct DepthModelSimulator: View {
+  @Environment(\.slideTheme) var theme
   let converter = MarkdownToSlideConverter()
 
   var body: some View {
-    HStack {
-      SlideWrapper {
-        converter.convertPage(
-          """
-          # モデル比較シミュレーター
-
-          - 写真ライブラリ・ファイルから写真を選択
-          - モデルを切り替えて深度画像を比較
-          - ドラッグで元画像とビフォーアフター比較
-          - ピンチ / ボタンで拡大縮小
-          """
-        )
-      }
+    VStack {
+      Text("モデル比較シミュレーター")
+        .font(theme.headingH1Font)
+        .foregroundStyle(theme.primaryTextColor)
+        .frame(maxWidth: .infinity, alignment: .leading)
 
       DepthModelCompareView()
         .frame(maxWidth: .infinity, maxHeight: .infinity)

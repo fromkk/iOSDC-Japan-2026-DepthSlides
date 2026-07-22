@@ -18,17 +18,32 @@ import SwiftUI
 struct BeforeAfterImageCompareView: View {
   let before: CGImage
   let after: CGImage
+  var beforeLabel: String = "元画像"
+  var afterLabel: String = "深度画像"
+  /// タップされた位置を画像に対する正規化座標（左上原点・0...1）で通知する。
+  /// `nil`（デフォルト）のままだとタップジェスチャー自体を無効化する
+  /// （比較モードなど、タップに意味を持たせない呼び出し元向け）。
+  var onTap: ((CGPoint) -> Void)?
   @Binding var zoomState: ImageZoomState
   @Binding var revealFraction: CGFloat
 
   @GestureState private var magnifyDelta: CGFloat = 1
   @GestureState private var panDelta: CGSize = .zero
   @GestureState private var dividerDragDelta: CGFloat = 0
+  @State private var tapIndicatorLocation: CGPoint?
 
   private let minScale: CGFloat = 1
   private let maxScale: CGFloat = 6
   private let zoomStep: CGFloat = 1.5
   private let handleWidth: CGFloat = 32
+
+  /// タップジェスチャーを `.scaleEffect`/`.offset` されたビュー自身の `.local`
+  /// 座標系に頼らず、ズーム・パンの影響を受けない外側コンテナ基準で取得する
+  /// ための名前付き座標空間。`.local` がスケール・オフセットをどこまで
+  /// 自動的に打ち消してくれるかは自明ではないため、コンテナ基準の座標を
+  /// 明示的に取得したうえで、既知の `currentScale`/`currentOffset` を
+  /// 自前で逆変換する方針にしている（`normalizedImagePoint` 参照）。
+  private static let coordinateSpaceName = "BeforeAfterImageCompareView.container"
 
   var body: some View {
     GeometryReader { geo in
@@ -42,9 +57,16 @@ struct BeforeAfterImageCompareView: View {
           .contentShape(Rectangle())
           .gesture(panGesture)
           .simultaneousGesture(magnifyGesture)
+          .simultaneousGesture(tapGesture(containerSize: geo.size))
           .clipped()
 
         dividerHandle(fraction: fraction, containerSize: geo.size)
+
+        if let tapIndicatorLocation {
+          focusIndicator
+            .position(tapIndicatorLocation)
+            .allowsHitTesting(false)
+        }
 
         labels
 
@@ -52,29 +74,27 @@ struct BeforeAfterImageCompareView: View {
           .padding(12)
           .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
       }
+      .coordinateSpace(name: Self.coordinateSpaceName)
       .clipShape(RoundedRectangle(cornerRadius: 12))
     }
   }
 
   /// `before`/`after` は常に同じピクセルサイズ（`DepthEstimator` が深度画像を
-  /// 元画像と同じ寸法にリサイズして返すため）だが、コンテナとのアスペクト比が
-  /// 一致するとは限らない。`.fit` だとレターボックスが生まれ、実際に描画される
-  /// 画像フレームがコンテナ全体 (`containerSize`) より小さくなることがあり、
-  /// その場合ハンドル位置（コンテナ基準）とマスクの境界（画像フレーム基準）が
-  /// ズレてしまう。`.fill` + `.clipped()` で画像を常にコンテナ全体ぴったりに
-  /// 描画することで、マスク・ハンドルの両方を同じ `containerSize` 基準で
-  /// 一貫して計算できるようにしている。
+  /// 元画像と同じ寸法にリサイズして返すため）なので、`.fit` で描画しても両者は
+  /// 常に同じ位置・同じ大きさにレターボックスされる。ハンドル・マスクは
+  /// （画像フレームではなく）`containerSize` 基準のまま変更していないため、
+  /// レターボックスの余白ごと一貫して見え隠れする形になり、ズレは生じない。
   private func imageStack(fraction: CGFloat, containerSize: CGSize) -> some View {
     ZStack {
       Image(decorative: before, scale: 1)
         .resizable()
-        .aspectRatio(contentMode: .fill)
+        .aspectRatio(contentMode: .fit)
         .frame(width: containerSize.width, height: containerSize.height)
         .clipped()
 
       Image(decorative: after, scale: 1)
         .resizable()
-        .aspectRatio(contentMode: .fill)
+        .aspectRatio(contentMode: .fit)
         .frame(width: containerSize.width, height: containerSize.height)
         .clipped()
         .mask(alignment: .leading) {
@@ -86,9 +106,9 @@ struct BeforeAfterImageCompareView: View {
   private var labels: some View {
     VStack {
       HStack {
-        label("元画像")
+        label(beforeLabel)
         Spacer()
-        label("深度画像")
+        label(afterLabel)
       }
       Spacer()
     }
@@ -198,6 +218,80 @@ struct BeforeAfterImageCompareView: View {
         let delta = value.translation.width / containerWidth
         revealFraction = min(max(revealFraction + delta, 0), 1)
       }
+  }
+
+  /// `onTap` が設定されていない呼び出し元（比較モードなど）では、実質的に
+  /// 何も起きないジェスチャーを返す（`.gesture` チェーンに常に同じ形の
+  /// ジェスチャーを繋いでおいたほうがコードがシンプルになるため）。
+  ///
+  /// `.named(Self.coordinateSpaceName)` を使うことで、`value.location` は
+  /// ズーム・パンされている `imageStack` 自身の `.local` 座標系ではなく、
+  /// 変形の影響を受けないコンテナ（`geo.size`）基準の「画面上どこをタップしたか」
+  /// を表す座標として得られる。そこから現在のズーム・パンを自前で打ち消して
+  /// （`unscaledLocalPoint`）、実際に見えている画像内容のどの位置がタップされたかを求める。
+  private func tapGesture(containerSize: CGSize) -> some Gesture {
+    SpatialTapGesture(coordinateSpace: .named(Self.coordinateSpaceName))
+      .onEnded { value in
+        guard let onTap else { return }
+        tapIndicatorLocation = value.location
+        let unscaledPoint = unscaledLocalPoint(from: value.location, containerSize: containerSize)
+        let normalized = normalizedImagePoint(from: unscaledPoint, containerSize: containerSize)
+        onTap(normalized)
+      }
+  }
+
+  /// コンテナ基準のタップ位置から、現在のズーム倍率・パンオフセットを打ち消して
+  /// 「等倍・パン無し」のローカル座標（containerSize 基準）に変換する。
+  /// `imageStack` は `.scaleEffect(currentScale)` の後に `.offset(currentOffset)`
+  /// を適用しているため、逆変換は「オフセットを引く → 中心を基準にスケールで割る」
+  /// の順で行う（`scaleEffect` のデフォルトアンカーは中心）。
+  private func unscaledLocalPoint(from containerPoint: CGPoint, containerSize: CGSize) -> CGPoint
+  {
+    let center = CGPoint(x: containerSize.width / 2, y: containerSize.height / 2)
+    let afterOffset = CGPoint(
+      x: containerPoint.x - currentOffset.width, y: containerPoint.y - currentOffset.height)
+    let relativeToCenter = CGPoint(x: afterOffset.x - center.x, y: afterOffset.y - center.y)
+    let unscaled = CGPoint(
+      x: relativeToCenter.x / currentScale, y: relativeToCenter.y / currentScale)
+    return CGPoint(x: unscaled.x + center.x, y: unscaled.y + center.y)
+  }
+
+  /// コンテナ内でのタップ位置（ズーム・パン無しの `geo.size` 基準ローカル座標）を、
+  /// `before`/`after` 画像の正規化座標（左上原点・0...1）に変換する。
+  /// 画像は `.aspectRatio(.fit)` でコンテナ内に収まるように描画されており、
+  /// コンテナとアスペクト比が異なる場合は左右または上下に余白（レターボックス）が
+  /// 生まれるため、単純な比率計算ではなく fit 表示時の実際の縮小率・余白量を考慮する。
+  private func normalizedImagePoint(from location: CGPoint, containerSize: CGSize) -> CGPoint {
+    let imageSize = CGSize(width: before.width, height: before.height)
+    guard imageSize.width > 0, imageSize.height > 0, containerSize.width > 0,
+      containerSize.height > 0
+    else { return CGPoint(x: 0.5, y: 0.5) }
+
+    let fitScale = min(
+      containerSize.width / imageSize.width, containerSize.height / imageSize.height)
+    let renderedSize = CGSize(
+      width: imageSize.width * fitScale, height: imageSize.height * fitScale)
+    let letterboxX = (containerSize.width - renderedSize.width) / 2
+    let letterboxY = (containerSize.height - renderedSize.height) / 2
+
+    let pixelX = (location.x - letterboxX) / fitScale
+    let pixelY = (location.y - letterboxY) / fitScale
+
+    return CGPoint(
+      x: min(max(pixelX / imageSize.width, 0), 1),
+      y: min(max(pixelY / imageSize.height, 0), 1))
+  }
+
+  private var focusIndicator: some View {
+    Circle()
+      .stroke(.yellow, lineWidth: 2)
+      .frame(width: 64, height: 64)
+      .overlay {
+        Circle()
+          .stroke(.yellow, lineWidth: 1)
+          .frame(width: 16, height: 16)
+      }
+      .shadow(radius: 2)
   }
 }
 

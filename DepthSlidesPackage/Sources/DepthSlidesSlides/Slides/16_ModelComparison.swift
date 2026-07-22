@@ -12,16 +12,14 @@ struct ModelComparison: View {
         """
         # 配布されている ML モデルを利用して深度を推定する
 
-        - Depth Anything V2
-        - Depth Anything V3
-        - Depth Pro
+        \(DepthModel.allCases.map { "- \($0.displayName)" }.joined(separator: "\n"))
         """
       )
     }
   }
 
   var script: String = """
-    次に、配布されている ML モデルを使った深度推定です。今回は Depth Anything V2、Depth Anything V3、Depth Pro の3つを試しました。
+    次に、配布されている ML モデルを使った深度推定です。今回は \(DepthModel.allCases.map { $0.displayName }.joined(separator: ", ")) の\(DepthModel.allCases.count)つを試しました。
     どう違うのか、シミュレーターを作って比較してみます。
     """
 
