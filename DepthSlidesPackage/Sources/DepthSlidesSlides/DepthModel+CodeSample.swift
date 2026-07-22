@@ -9,8 +9,35 @@ import Foundation
 /// （MiDaS の変換後モデルの出力名は "depth" のような分かりやすい名前ではなく
 /// "var_797" のような自動生成名になるため、決め打ちで書くと誤りになる）。
 extension DepthModel {
+  /// コード表示モードの見出し。`embeddedDepth` は「推定」ではなく「取得」なので
+  /// 他モデルと同じ「〜で深度を取得」というテンプレートに当てはめると
+  /// 意味が重複してしまうため専用の文言にする。
+  var codeSectionTitle: String {
+    switch self {
+    case .embeddedDepth: "写真に含まれる深度情報を取得"
+    default: "\(displayName) で深度を取得"
+    }
+  }
+
   var estimationCodeSample: String {
     switch self {
+    case .embeddedDepth:
+      """
+      // Portraitモードなどで撮影した写真の HEIC には、AVDepthData 形式の
+      // 深度情報が補助データとして埋め込まれている（機種・撮影条件によっては
+      // 埋め込まれていないこともある）
+      let source = CGImageSourceCreateWithData(data as CFData, nil)!
+      let info = CGImageSourceCopyAuxiliaryDataInfoAtIndex(
+        source, 0, kCGImageAuxiliaryDataTypeDisparity
+      ) as! [AnyHashable: Any]
+      let depthData = try AVDepthData(fromDictionaryRepresentation: info)
+
+      // 視差(disparity)形式に統一して取り出す（近い = 値が大きい = 明るい）
+      let converted = depthData.converting(
+        toDepthDataType: kCVPixelFormatType_DisparityFloat32
+      )
+      let depthImage = CIImage(cvPixelBuffer: converted.depthDataMap)
+      """
     case .depthAnythingV2Small, .midasSmall:
       """
       // モデルごとに入出力の名前が異なる（変換時に自動生成されることもある）ため、

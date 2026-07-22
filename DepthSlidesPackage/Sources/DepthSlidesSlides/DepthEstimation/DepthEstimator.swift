@@ -59,6 +59,14 @@ actor DepthEstimator {
   private func runInference(cgImage: CGImage, model: DepthModel) async throws -> CGImage {
     let mlModel = try await loadModel(model)
     switch model {
+    case .embeddedDepth:
+      // embeddedDepth は Core ML 推論ではなく `EmbeddedDepthExtractor` が
+      // 写真自体の AVDepthData から取り出す（`packageURL` が nil のため
+      // 実際には上の `loadModel` が先に `.modelNotBundled` を投げる）。
+      // `DepthModelCompareView` 側でこのケースには分岐しないため、ここには
+      // 到達しないはずだが、`DepthModel` の全ケースに対して網羅的であることを
+      // 保証するために残している。
+      throw DepthEstimationError.modelNotBundled(model)
     case .depthPro:
       return try runDepthPro(cgImage: cgImage, model: mlModel)
     case .depthAnythingV3Small:
@@ -270,7 +278,7 @@ actor DepthEstimator {
   ///
   /// - Parameter invertForNearBright: モデルの生の出力値が「視差 (disparity)」
   ///   （近いほど値が大きい）ではなく「実際の深度」（近いほど値が小さい）を
-  ///   表す場合に `true` を指定する。`DepthImagePickerView` の AVDepthData 由来の
+  ///   表す場合に `true` を指定する。`EmbeddedDepthExtractor` の AVDepthData 由来の
   ///   視差可視化や、Apple 配布の Depth Anything V2 Small・MiDaS の生スコアは
   ///   視差系（近い=明るい）なので `false` のままでよいが、Depth Pro の
   ///   `depthMeters`（実測メートル）や Depth Anything V3 の `depth`（点群の

@@ -6,7 +6,7 @@ import SwiftUI
 
 /// PhotosPicker で選んだ写真に対して、選択した Core ML 深度推定モデルで
 /// 推論を実行し、その場で深度画像をプレビューするための View。
-/// `DepthImagePickerView`（AVDepthData版）と同じ UX パターンを踏襲しつつ、
+/// AVDepthData を使った深度取得と同じ UX パターンを踏襲しつつ、
 /// モデルを切り替えて比較できるようにしている。
 struct DepthModelPickerView: View {
   @Environment(\.slideTheme) var slideTheme
@@ -91,7 +91,7 @@ struct DepthModelPickerView: View {
 
   /// 元画像は EXIF Orientation を反映しない生のピクセルデータで取得されるため、
   /// モデルに渡す前に本体画像の向きを補正する（深度データ側の補正は
-  /// `DepthImagePickerView` と同じ考え方）。
+  /// `EmbeddedDepthExtractor` と同じ考え方）。
   private func orientedCGImage(_ cgImage: CGImage, orientation: CGImagePropertyOrientation?)
     -> CGImage
   {

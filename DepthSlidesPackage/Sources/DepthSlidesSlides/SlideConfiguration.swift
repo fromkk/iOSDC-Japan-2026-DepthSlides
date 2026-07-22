@@ -20,7 +20,6 @@ public struct SlideConfiguration {
     IPhonePhotoProblems()
     PortraitMode()
     BokehImprovementApproaches()
-    DepthDataAcquisition()
     ModelUsageNotes()
     ModelComparison()
     DepthModelSimulator()

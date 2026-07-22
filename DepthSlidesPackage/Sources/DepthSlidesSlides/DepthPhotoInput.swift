@@ -6,7 +6,7 @@ import UniformTypeIdentifiers
 
 /// `loadTransferable(type: Data.self)` を要求させると Photos が JPEG に
 /// 変換して深度メタデータを剥がしてしまうため、HEIC のまま（ファイル→データの順で）
-/// 取得できるよう明示的な UTType で要求する。`DepthImagePickerView` と
+/// 取得できるよう明示的な UTType で要求する。`DepthModelCompareView` と
 /// `DepthModelPickerView` の両方から利用する共通ヘルパー。
 func originalImageData(from item: PhotosPickerItem) async -> Data? {
   if let file = try? await item.loadTransferable(type: HEICFileTransferable.self) {

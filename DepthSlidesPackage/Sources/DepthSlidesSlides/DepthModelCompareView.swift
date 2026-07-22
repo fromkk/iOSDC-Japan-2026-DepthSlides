@@ -29,7 +29,7 @@ struct DepthModelCompareView: View {
 
   @State private var pickerItem: PhotosPickerItem?
   @State private var isFileImporterPresented = false
-  @State private var selectedModel: DepthModel = .depthAnythingV2Small
+  @State private var selectedModel: DepthModel = .embeddedDepth
   @State private var displayMode: DisplayMode = .compare
 
   @State private var imageData: Data?
@@ -162,7 +162,7 @@ struct DepthModelCompareView: View {
 
   private var codeMarkdown: String {
     """
-    ### \(selectedModel.displayName) で深度を取得
+    ### \(selectedModel.codeSectionTitle)
 
     ```swift
     \(selectedModel.estimationCodeSample)
@@ -244,16 +244,31 @@ struct DepthModelCompareView: View {
   private func runEstimation() async {
     guard let originalCGImage, let imageData else { return }
 
+    depthCGImage = nil
+    blurredCGImage = nil
+
+    if selectedModel == .embeddedDepth {
+      statusMessage = "写真に含まれる深度情報を抽出中..."
+      do {
+        let result = try await Task.detached(priority: .userInitiated) {
+          try EmbeddedDepthExtractor.extractDepthImage(from: imageData)
+        }.value
+        depthCGImage = result
+        await recomputeBlur()
+      } catch EmbeddedDepthExtractor.ExtractionError.noEmbeddedDepthData {
+        statusMessage = "この写真には深度情報が含まれていません（Portraitモードで撮影した写真をお試しください）"
+      } catch {
+        statusMessage = "深度情報の抽出に失敗しました: \(error)"
+      }
+      return
+    }
+
     guard selectedModel.packageURL != nil else {
-      depthCGImage = nil
-      blurredCGImage = nil
       statusMessage =
         "\(selectedModel.displayName) のモデルが見つかりません。scripts/ 以下のスクリプトを実行してください"
       return
     }
 
-    depthCGImage = nil
-    blurredCGImage = nil
     statusMessage = "\(selectedModel.displayName) で推論中..."
 
     let cacheKey = DepthCacheKey(imageData: imageData, model: selectedModel)
