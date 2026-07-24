@@ -254,11 +254,12 @@ actor DepthEstimator {
     for y in 0..<height {
       let row = source + y * bytesPerRow
       for x in 0..<width {
-        // kCVPixelFormatType_32ARGB のバイト順は B, G, R, A
+        // kCVPixelFormatType_32ARGB のバイト順は A, R, G, B
+        // (実測で確認済み: 純赤ピクセルをレンダリングすると [255,255,0,0] になる)
         let pixel = row + x * 4
-        let r = Float(pixel[2]) / 255.0
-        let g = Float(pixel[1]) / 255.0
-        let b = Float(pixel[0]) / 255.0
+        let r = Float(pixel[1]) / 255.0
+        let g = Float(pixel[2]) / 255.0
+        let b = Float(pixel[3]) / 255.0
         let normalized = [
           (r - mean[0]) / std[0],
           (g - mean[1]) / std[1],
