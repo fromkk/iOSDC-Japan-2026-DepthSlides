@@ -25,18 +25,27 @@ extension DepthModel {
       """
       // Portraitモードなどで撮影した写真の HEIC には、AVDepthData 形式の
       // 深度情報が補助データとして埋め込まれている（機種・撮影条件によっては
-      // 埋め込まれていないこともある）
+      // 埋め込まれていないこともあるため、Depth → Disparity の順に試す）
       let source = CGImageSourceCreateWithData(data as CFData, nil)!
-      let info = CGImageSourceCopyAuxiliaryDataInfoAtIndex(
-        source, 0, kCGImageAuxiliaryDataTypeDisparity
-      ) as! [AnyHashable: Any]
+      let info = [kCGImageAuxiliaryDataTypeDepth, kCGImageAuxiliaryDataTypeDisparity]
+        .lazy
+        .compactMap {
+          CGImageSourceCopyAuxiliaryDataInfoAtIndex(source, 0, $0) as? [AnyHashable: Any]
+        }
+        .first!
       let depthData = try AVDepthData(fromDictionaryRepresentation: info)
 
       // 視差(disparity)形式に統一して取り出す（近い = 値が大きい = 明るい）
       let converted = depthData.converting(
         toDepthDataType: kCVPixelFormatType_DisparityFloat32
       )
-      let depthImage = CIImage(cvPixelBuffer: converted.depthDataMap)
+      var depthImage = CIImage(cvPixelBuffer: converted.depthDataMap)
+
+      // 深度マップはセンサーの生の向きで格納されているため、本体画像の
+      // EXIF Orientation を読み取って同じ回転を適用しないと縦写真が横向きになる
+      if let orientation = exifOrientation(from: source) {
+        depthImage = depthImage.oriented(orientation)
+      }
       """
     case .depthAnythingV2Small, .midasSmall:
       """
