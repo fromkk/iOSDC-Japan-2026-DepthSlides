@@ -4,23 +4,25 @@ import SwiftUI
 
 @Slide
 struct FNumberDemo: View {
-  let converter = MarkdownToSlideConverter()
+  @Environment(\.slideTheme) var slideTheme
 
   var body: some View {
-    SlideWrapper {
-      // TODO: 絞りの開閉とボケの大きさが連動するデモを実装する
-      converter.convertPage(
-        """
-        # f値デモ
+    VStack(alignment: .leading, spacing: 24) {
+      Text("f値デモ")
+        .font(slideTheme.headingH1Font)
+        .foregroundStyle(slideTheme.primaryTextColor)
 
-        （絞りを開けるとボケが大きくなり、絞りを閉じるとボケが小さくなる様子を見せる）
-        """
-      )
+      DepthOfFieldSlideView()
     }
+    .padding(slideTheme.contentPadding)
+    .background(slideTheme.backgroundColor)
   }
 
   var script: String = """
-    実際に見てみましょう。絞りを開けるとボケが大きくなり、絞りを閉じるとボケが小さくなります。
+    実際に見てみましょう。黄色い光線とオレンジの点が、ピントを合わせた被写体です。
+    緑の帯が被写界深度、つまりこの範囲にある被写体ならシャープに写る、という距離の範囲を表しています。
+    f値を小さくして絞りを開けると、この緑の帯が狭くなり被写界深度が浅くなります。
+    逆にf値を大きくして絞りを閉じると、帯が広がって被写界深度が深くなり、遠くまでピントが合うようになります。
     """
 
   var transition: AnyTransition = AnyTransition(AwesomeTransition())

@@ -66,12 +66,15 @@ enum RayCanvasDrawing {
         }
     }
 
-    static func drawRay(_ context: inout GraphicsContext, segment: LineSegment, transform: Transform) {
+    static func drawRay(
+        _ context: inout GraphicsContext, segment: LineSegment, transform: Transform,
+        colorOverride: Color? = nil
+    ) {
         var path = Path()
         path.move(to: transform.point(segment.start))
         path.addLine(to: transform.point(segment.end))
         let (color, strokeStyle) = style(for: segment)
-        context.stroke(path, with: .color(color), style: strokeStyle)
+        context.stroke(path, with: .color(colorOverride ?? color), style: strokeStyle)
     }
 
     /// A vertical barrier with a gap centered at `gapCenter` of width
