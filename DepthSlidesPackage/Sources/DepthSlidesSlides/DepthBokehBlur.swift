@@ -16,6 +16,27 @@ enum DepthBokehBlur {
   ) -> CGImage? {
     let context = CIContext()
     let originalImage = CIImage(cgImage: original)
+    let mask = blurMask(
+      depth: depth, matchingExtentOf: originalImage, focusPoint: focusPoint, context: context)
+
+    let blur = CIFilter.maskedVariableBlur()
+    blur.inputImage = originalImage
+    blur.mask = mask
+    blur.radius = Float(radius)
+    guard let output = blur.outputImage else { return nil }
+
+    // ぼかし半径分だけ出力の extent が元画像より広がるため、切り戻す。
+    let cropped = output.cropped(to: originalImage.extent)
+    return context.createCGImage(cropped, from: cropped.extent)
+  }
+
+  /// 深度画像から、ボケの強さを表すマスクを作る。`focusPoint` が nil なら
+  /// 「遠いほど明るい」既定のマスク、指定されていれば焦点距離との差分マスク
+  /// (`focusDistanceMask` 参照)。`DepthBokehBlur.apply` と `CIFilterBokehBlur.apply`
+  /// の両方から使う共通処理。
+  static func blurMask(
+    depth: CGImage, matchingExtentOf original: CIImage, focusPoint: CGPoint?, context: CIContext
+  ) -> CIImage {
     var depthImage = CIImage(cgImage: depth)
     // 焦点との差分計算専用に、色空間を付けずに読み込んだ深度画像も用意する。
     // 通常の CIImage(cgImage:) だと depth の色空間（DeviceGray）に基づいて
@@ -28,18 +49,17 @@ enum DepthBokehBlur {
 
     // DepthEstimator は深度画像を元画像と同じ寸法にリサイズして返す前提だが、
     // 念のため寸法が異なる場合は合わせる。
-    if depthImage.extent.size != originalImage.extent.size {
-      let sx = originalImage.extent.width / depthImage.extent.width
-      let sy = originalImage.extent.height / depthImage.extent.height
+    if depthImage.extent.size != original.extent.size {
+      let sx = original.extent.width / depthImage.extent.width
+      let sy = original.extent.height / depthImage.extent.height
       let transform = CGAffineTransform(scaleX: sx, y: sy)
       depthImage = depthImage.transformed(by: transform)
       rawDepthImage = rawDepthImage.transformed(by: transform)
     }
 
-    let mask: CIImage
     if let focusPoint {
       let focusValue = sampleGrayscaleValue(context: context, image: rawDepthImage, at: focusPoint)
-      mask = focusDistanceMask(depthImage: rawDepthImage, focusValue: focusValue)
+      return focusDistanceMask(depthImage: rawDepthImage, focusValue: focusValue)
     } else {
       // CIMaskedVariableBlur は「マスクが明るいほど強くぼかす」規約。
       // depth は「近い=明るい」なので、そのまま使うと近くの被写体がぼやけてしまう。
@@ -51,18 +71,8 @@ enum DepthBokehBlur {
       // 「近くの被写体」全体にも薄くボケがかかってしまうため、ガンマカーブで
       // 中間〜低めの値をさらに0側へ寄せ、被写体はよりシャープに・背景ほど
       // 急激にボケが強まるようにする（遠い=明るい側の値はほぼ変化しない）。
-      mask = invertedMask.applyingFilter("CIGammaAdjust", parameters: ["inputPower": 3.0])
+      return invertedMask.applyingFilter("CIGammaAdjust", parameters: ["inputPower": 3.0])
     }
-
-    let blur = CIFilter.maskedVariableBlur()
-    blur.inputImage = originalImage
-    blur.mask = mask
-    blur.radius = Float(radius)
-    guard let output = blur.outputImage else { return nil }
-
-    // ぼかし半径分だけ出力の extent が元画像より広がるため、切り戻す。
-    let cropped = output.cropped(to: originalImage.extent)
-    return context.createCGImage(cropped, from: cropped.extent)
   }
 
   /// 焦点位置の深度値との絶対差をマスクにする（差が大きいほど明るい=強くぼける）。

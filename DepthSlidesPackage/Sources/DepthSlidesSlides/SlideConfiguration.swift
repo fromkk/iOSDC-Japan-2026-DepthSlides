@@ -24,6 +24,7 @@ public struct SlideConfiguration {
     ModelComparison()
     DepthModelSimulator()
     BokehBlurComparison()
+    BokehFilterSimulator()
     Summary()
     SaitamaSwiftPR()
   }

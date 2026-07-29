@@ -8,7 +8,6 @@ struct BokehBlurComparison: View {
 
   var body: some View {
     SlideWrapper {
-      // TODO: どう違うのか Simulator を作って比較する
       converter.convertPage(
         """
         # 様々なボケを試して最適なものを選ぶ
