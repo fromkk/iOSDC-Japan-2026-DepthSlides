@@ -38,7 +38,8 @@ let package = Package(
         .product(name: "SlideKit", package: "SlideKit"),
       ],
       resources: [
-        .copy("Models")
+        .copy("Models"),
+        .process("Resources"),
       ]
     ),
     .testTarget(

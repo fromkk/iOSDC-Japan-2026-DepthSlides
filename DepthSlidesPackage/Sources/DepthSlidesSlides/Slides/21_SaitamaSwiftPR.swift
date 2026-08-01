@@ -1,25 +1,59 @@
+import AVKit
 import MarkdownToSlide
 import SlideKit
 import SwiftUI
 
 @Slide
 struct SaitamaSwiftPR: View {
-  let converter = MarkdownToSlideConverter()
+  enum SlidePhase: Int, PhasedState {
+    case initial
+    case second
+    case third
+  }
+
+  @Phase var phase: SlidePhase
+  @Environment(\.slideTheme) var theme
+
+  let videoURL: URL? = Bundle.module.url(forResource: "saitama_swift_cm", withExtension: "mp4")
 
   var body: some View {
-    SlideWrapper {
-      converter.convertPage(
-        """
-        # PR 11/21(土) Saitama.swift やります
+    switch phase {
+    case .initial:
+      if let videoURL {
+        VideoPlayer(player: AVPlayer(url: videoURL))
+      }
+    case .second:
+      VStack {
+        HStack {
+          Image(.saitamaSwift)
+            .resizable()
+            .aspectRatio(contentMode: .fit)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-        - 埼玉県初のJapan-\\(region).swift
-        - 所沢市民文化センター　ミューズが会場
-        - ぎょうざの満洲で懇親会やります
-          - 少し早い忘年会として
-          - 人生トークなどもできる
-          - 一緒に餃子食べましょう
-        """
-      )
+          Image(.saitamaSwiftQr)
+            .resizable()
+            .aspectRatio(contentMode: .fit)
+            .frame(width: 200, height: 200)
+        }
+        Text("https://japan-region-swift.connpass.com/event/397259/")
+      }
+      .padding(theme.contentPadding)
+    case .third:
+      VStack {
+        HStack {
+          Image(.saitamaSwiftAfterparty)
+            .resizable()
+            .aspectRatio(contentMode: .fit)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+          Image(.saitamaSwiftAfterpartyQr)
+            .resizable()
+            .aspectRatio(contentMode: .fit)
+            .frame(width: 200, height: 200)
+        }
+        Text("https://japan-region-swift.connpass.com/event/397260/")
+      }
+      .padding(theme.contentPadding)
     }
   }
 
@@ -33,8 +67,35 @@ struct SaitamaSwiftPR: View {
   var transition: AnyTransition = AnyTransition(AwesomeTransition())
 }
 
-#Preview {
-  SlidePreview {
+#Preview("initial") {
+  let container = ObservableObjectContainer()
+  _ = container.resolve {
+    PhasedStateStore<SaitamaSwiftPR.SlidePhase>(.initial)
+  }
+  let controller = SlideIndexController(container: container) {
     SaitamaSwiftPR()
   }
+  return SlideRouterView(slideIndexController: controller)
+}
+
+#Preview("second") {
+  let container = ObservableObjectContainer()
+  _ = container.resolve {
+    PhasedStateStore<SaitamaSwiftPR.SlidePhase>(.second)
+  }
+  let controller = SlideIndexController(container: container) {
+    SaitamaSwiftPR()
+  }
+  return SlideRouterView(slideIndexController: controller)
+}
+
+#Preview("third") {
+  let container = ObservableObjectContainer()
+  _ = container.resolve {
+    PhasedStateStore<SaitamaSwiftPR.SlidePhase>(.third)
+  }
+  let controller = SlideIndexController(container: container) {
+    SaitamaSwiftPR()
+  }
+  return SlideRouterView(slideIndexController: controller)
 }
