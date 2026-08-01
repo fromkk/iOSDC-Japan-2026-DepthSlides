@@ -11,6 +11,8 @@ struct PortraitMode: View {
 
   @Phase var phase: SlidePhase
 
+  @Environment(\.slideTheme) var slideTheme
+
   let converter = MarkdownToSlideConverter()
 
   var body: some View {
@@ -36,11 +38,13 @@ struct PortraitMode: View {
           .resizable()
           .aspectRatio(contentMode: .fit)
           .frame(width: 400)
+          .padding(.trailing, slideTheme.contentPadding)
       case .second:
         Image(.IMG_1606)
           .resizable()
           .aspectRatio(contentMode: .fit)
           .frame(width: 400)
+          .padding(.trailing, slideTheme.contentPadding)
       }
     }
   }
