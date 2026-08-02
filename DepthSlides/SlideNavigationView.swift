@@ -7,6 +7,7 @@
     let configuration: SlideConfiguration
     var store: AppStore?
     @ObservedObject private var slideIndexController: SlideIndexController
+    @Environment(\.presentationSyncCoordinator) private var syncCoordinator
     @FocusState private var isFocused: Bool
     @State private var isExporting = false
     @State private var exportURL: URL?
@@ -16,6 +17,29 @@
       self.configuration = configuration
       self.store = store
       self.slideIndexController = configuration.slideIndexController
+    }
+
+    // ページ送りは必ずここを経由させる。`slideIndexController.forward()/back()`を
+    // 直接呼ぶと、スライド内Phaseだけが進むケースが同期されなくなる。
+    private func stepForward() {
+      if let syncCoordinator {
+        syncCoordinator.forward()
+      } else {
+        configuration.slideIndexController.forward()
+      }
+    }
+
+    private func stepBack() {
+      if let syncCoordinator {
+        syncCoordinator.back()
+      } else {
+        configuration.slideIndexController.back()
+      }
+    }
+
+    /// 押し間違い等でMacとズレたときに、接続中のMacの現在位置に合わせ直す。
+    private func syncFromMac() {
+      syncCoordinator?.syncFromMaster()
     }
 
     var body: some View {
@@ -49,15 +73,15 @@
         .focusEffectDisabled(true)
         .focused($isFocused)
         .onKeyPress(.rightArrow) {
-          Task { @MainActor in configuration.slideIndexController.forward() }
+          Task { @MainActor in stepForward() }
           return .handled
         }
         .onKeyPress(.leftArrow) {
-          Task { @MainActor in configuration.slideIndexController.back() }
+          Task { @MainActor in stepBack() }
           return .handled
         }
         .onKeyPress(.space) {
-          Task { @MainActor in configuration.slideIndexController.forward() }
+          Task { @MainActor in stepForward() }
           return .handled
         }
         .onAppear {
@@ -84,6 +108,15 @@
           .tint(Color(.label))
           .buttonStyle(.glass)
           .disabled(isExporting)
+
+          Button {
+            syncFromMac()
+          } label: {
+            Label("Macと同期", systemImage: "arrow.triangle.2.circlepath")
+              .labelStyle(.iconOnly)
+          }
+          .tint(Color(.label))
+          .buttonStyle(.glass)
 
           if let store, store.hasExternalDisplay {
             Button {
@@ -127,15 +160,15 @@
         .focusEffectDisabled(true)
         .focused($isFocused)
         .onKeyPress(.rightArrow) {
-          Task { @MainActor in configuration.slideIndexController.forward() }
+          Task { @MainActor in stepForward() }
           return .handled
         }
         .onKeyPress(.leftArrow) {
-          Task { @MainActor in configuration.slideIndexController.back() }
+          Task { @MainActor in stepBack() }
           return .handled
         }
         .onKeyPress(.space) {
-          Task { @MainActor in configuration.slideIndexController.forward() }
+          Task { @MainActor in stepForward() }
           return .handled
         }
         .onAppear {
@@ -171,9 +204,17 @@
             .disabled(isExporting)
           }
 
+          ToolbarItem(placement: .primaryAction) {
+            Button {
+              syncFromMac()
+            } label: {
+              Label("Macと同期", systemImage: "arrow.triangle.2.circlepath")
+            }
+          }
+
           ToolbarItem(placement: .bottomBar) {
             Button {
-              configuration.slideIndexController.back()
+              stepBack()
             } label: {
               Label("Back", systemImage: "chevron.backward")
             }
@@ -189,7 +230,7 @@
 
           ToolbarItem(placement: .bottomBar) {
             Button {
-              configuration.slideIndexController.forward()
+              stepForward()
             } label: {
               Label("Next", systemImage: "chevron.forward")
             }
@@ -204,9 +245,9 @@
       DragGesture(minimumDistance: 100)
         .onEnded { value in
           if value.translation.width < 100 {
-            configuration.slideIndexController.forward()
+            stepForward()
           } else if value.translation.width > -100 {
-            configuration.slideIndexController.back()
+            stepBack()
           }
         }
     }

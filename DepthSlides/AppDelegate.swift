@@ -12,12 +12,14 @@
 
     let configuration = SlideConfiguration()
     let store = AppStore()
+    let syncCoordinator = PresentationSyncCoordinator()
 
     func application(
       _ application: UIApplication,
       didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
     ) -> Bool {
       logger.info("\(#function)")
+      syncCoordinator.start(attachingTo: configuration.slideIndexController)
       return true
     }
 

@@ -46,9 +46,11 @@
     }
 
     private func createWindow(_ scene: UIWindowScene, configuration: SlideConfiguration) {
+      let syncCoordinator = (UIApplication.shared.delegate as? AppDelegate)?.syncCoordinator
       let contentView = PresentationView(slideSize: configuration.size) {
         SlideRouterView(slideIndexController: configuration.slideIndexController)
       }
+      .environment(\.presentationSyncCoordinator, syncCoordinator)
       .preferredColorScheme(.light)
       let window = UIWindow(windowScene: scene)
       window.overrideUserInterfaceStyle = .light

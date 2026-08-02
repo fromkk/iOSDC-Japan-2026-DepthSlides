@@ -29,6 +29,8 @@ struct DepthModelCompareView: View {
 
   @State private var pickerItem: PhotosPickerItem?
   @State private var isFileImporterPresented = false
+  @State private var isPeerCaptureCameraPresented = false
+  @State private var isPeerReceiverPresented = false
   @State private var selectedModel: DepthModel = .embeddedDepth
   @State private var displayMode: DisplayMode = .compare
 
@@ -48,11 +50,34 @@ struct DepthModelCompareView: View {
 
   var body: some View {
     VStack(spacing: 16) {
-      ZStack {
+      ZStack(alignment: .topTrailing) {
         RoundedRectangle(cornerRadius: 12)
           .fill(.black.opacity(0.03))
 
         contentView
+
+        // 他のボタンと並べた行の中だと押しにくいという指摘を受け、コーナーに
+        // 独立したフローティングボタンとして配置している（SlideNavigationView の
+        // 「Export PDF」ボタンと同じ見た目・置き方）。
+        #if os(iOS)
+          Button {
+            isPeerCaptureCameraPresented = true
+          } label: {
+            Image(systemName: "camera.badge.ellipsis")
+              .font(.system(size: 20))
+          }
+          .buttonStyle(.glass)
+          .padding(12)
+        #elseif os(macOS)
+          Button {
+            isPeerReceiverPresented = true
+          } label: {
+            Image(systemName: "iphone.and.arrow.forward")
+              .font(.system(size: 20))
+          }
+          .buttonStyle(.glass)
+          .padding(12)
+        #endif
       }
       .frame(maxWidth: .infinity, maxHeight: .infinity)
 
@@ -96,6 +121,21 @@ struct DepthModelCompareView: View {
     .onChange(of: selectedModel) { _, _ in
       Task { await runEstimation() }
     }
+    #if os(iOS)
+      .fullScreenCover(isPresented: $isPeerCaptureCameraPresented) {
+        PeerCaptureCameraView { data in
+          isPeerCaptureCameraPresented = false
+          Task { await loadImage(from: data) }
+        }
+      }
+    #elseif os(macOS)
+      .sheet(isPresented: $isPeerReceiverPresented) {
+        PeerCaptureReceiverView { data in
+          isPeerReceiverPresented = false
+          Task { await loadImage(from: data) }
+        }
+      }
+    #endif
   }
 
   @ViewBuilder
