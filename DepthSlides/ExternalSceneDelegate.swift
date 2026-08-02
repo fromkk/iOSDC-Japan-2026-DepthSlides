@@ -1,10 +1,12 @@
 #if canImport(UIKit)
   import DepthSlidesSlides
+  import MarkdownToSlide
   import SlideKit
   import SwiftUI
   import UIKit
 
   final class ExternalSceneDelegate: UIResponder, UIWindowSceneDelegate {
+    private let theme: MarkdownToSlide.SlideTheme = .default
     var window: UIWindow?
 
     func scene(
@@ -48,8 +50,12 @@
     private func createWindow(_ scene: UIWindowScene, configuration: SlideConfiguration) {
       let syncCoordinator = (UIApplication.shared.delegate as? AppDelegate)?.syncCoordinator
       let contentView = PresentationView(slideSize: configuration.size) {
-        SlideRouterView(slideIndexController: configuration.slideIndexController)
+        ZStack {
+          self.theme.backgroundColor
+          SlideRouterView(slideIndexController: configuration.slideIndexController)
+        }
       }
+      .slideTheme(theme)
       .environment(\.presentationSyncCoordinator, syncCoordinator)
       .preferredColorScheme(.light)
       let window = UIWindow(windowScene: scene)
