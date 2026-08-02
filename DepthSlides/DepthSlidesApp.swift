@@ -8,12 +8,17 @@ import SwiftUI
 #endif
 struct DepthSlidesApp: App {
   private static let configuration = SlideConfiguration()
+  private static let syncCoordinator = PresentationSyncCoordinator()
   let theme: MarkdownToSlide.SlideTheme = .default
 
   var presentationContentView: some View {
     SlideRouterView(
       slideIndexController: Self.configuration.slideIndexController
     )
+    .task {
+      Self.syncCoordinator.start(attachingTo: Self.configuration.slideIndexController)
+    }
+    .environment(\.presentationSyncCoordinator, Self.syncCoordinator)
   }
 
   var body: some Scene {
@@ -30,7 +35,10 @@ struct DepthSlidesApp: App {
     #if os(macOS)
       .windowStyle(.hiddenTitleBar)
       .commands {
-        PresenterCommands(slideIndexController: Self.configuration.slideIndexController)
+        PresenterCommands(
+          slideIndexController: Self.configuration.slideIndexController,
+          syncCoordinator: Self.syncCoordinator
+        )
       }
     #endif
     #if os(macOS)
@@ -42,6 +50,7 @@ struct DepthSlidesApp: App {
           SlideRouterView(slideIndexController: Self.configuration.slideIndexController)
             .background(theme.backgroundColor)
         }
+        .environment(\.presentationSyncCoordinator, Self.syncCoordinator)
         .preferredColorScheme(.light)
       }
     #endif

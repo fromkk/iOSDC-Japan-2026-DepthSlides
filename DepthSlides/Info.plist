@@ -34,6 +34,17 @@
 	</dict>
 	<key>UILaunchScreen</key>
 	<dict/>
+	<key>NSCameraUsageDescription</key>
+	<string>登壇中にこのiPhoneのカメラで撮影し、Depth情報付きの写真をMacに送信するために使用します。</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>撮影した写真をあとで写真ライブラリから選び直せるように保存します。</string>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>同じネットワーク上のMac/iPhoneを見つけて、撮影した写真を送受信するために使用します。</string>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_depthslides-cap._tcp</string>
+		<string>_depthslides-sync._tcp</string>
+	</array>
 	<key>UISupportedInterfaceOrientations~iPad</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>

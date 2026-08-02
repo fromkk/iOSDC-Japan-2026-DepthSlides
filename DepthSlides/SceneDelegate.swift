@@ -29,7 +29,8 @@
         return
       }
 
-      let store = (UIApplication.shared.delegate as? AppDelegate)?.store
+      let appDelegate = UIApplication.shared.delegate as? AppDelegate
+      let store = appDelegate?.store
 
       window = UIWindow(windowScene: windowScene)
       window?.overrideUserInterfaceStyle = .light
@@ -37,6 +38,7 @@
         rootView: SlideNavigationView(configuration: configuration, store: store)
           .slideTheme(theme)
           .preferredColorScheme(.light)
+          .environment(\.presentationSyncCoordinator, appDelegate?.syncCoordinator)
       )
       window?.makeKeyAndVisible()
     }

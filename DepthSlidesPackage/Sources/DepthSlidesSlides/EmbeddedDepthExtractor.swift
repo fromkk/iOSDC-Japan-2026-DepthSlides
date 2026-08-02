@@ -39,6 +39,13 @@ enum EmbeddedDepthExtractor {
     return cgImage
   }
 
+  /// Depthの有無だけを判定する（`PeerCaptureCameraSession`が撮影直後に
+  /// 「Depthが必ず含まれる」ことを保証するために使う）。
+  static func hasEmbeddedDepth(in imageData: Data) -> Bool {
+    guard let source = CGImageSourceCreateWithData(imageData as CFData, nil) else { return false }
+    return auxiliaryDepthData(from: source) != nil
+  }
+
   private static func auxiliaryDepthData(from source: CGImageSource) -> AVDepthData? {
     for auxType in [kCGImageAuxiliaryDataTypeDepth, kCGImageAuxiliaryDataTypeDisparity]
       as [CFString]

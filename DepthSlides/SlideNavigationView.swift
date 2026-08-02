@@ -7,6 +7,7 @@
     let configuration: SlideConfiguration
     var store: AppStore?
     @ObservedObject private var slideIndexController: SlideIndexController
+    @Environment(\.presentationSyncCoordinator) private var syncCoordinator
     @FocusState private var isFocused: Bool
     @State private var isExporting = false
     @State private var exportURL: URL?
@@ -16,6 +17,24 @@
       self.configuration = configuration
       self.store = store
       self.slideIndexController = configuration.slideIndexController
+    }
+
+    // ページ送りは必ずここを経由させる。`slideIndexController.forward()/back()`を
+    // 直接呼ぶと、スライド内Phaseだけが進むケースが同期されなくなる。
+    private func stepForward() {
+      if let syncCoordinator {
+        syncCoordinator.forward()
+      } else {
+        stepForward()
+      }
+    }
+
+    private func stepBack() {
+      if let syncCoordinator {
+        syncCoordinator.back()
+      } else {
+        stepBack()
+      }
     }
 
     var body: some View {
@@ -49,15 +68,15 @@
         .focusEffectDisabled(true)
         .focused($isFocused)
         .onKeyPress(.rightArrow) {
-          Task { @MainActor in configuration.slideIndexController.forward() }
+          Task { @MainActor in stepForward() }
           return .handled
         }
         .onKeyPress(.leftArrow) {
-          Task { @MainActor in configuration.slideIndexController.back() }
+          Task { @MainActor in stepBack() }
           return .handled
         }
         .onKeyPress(.space) {
-          Task { @MainActor in configuration.slideIndexController.forward() }
+          Task { @MainActor in stepForward() }
           return .handled
         }
         .onAppear {
@@ -127,15 +146,15 @@
         .focusEffectDisabled(true)
         .focused($isFocused)
         .onKeyPress(.rightArrow) {
-          Task { @MainActor in configuration.slideIndexController.forward() }
+          Task { @MainActor in stepForward() }
           return .handled
         }
         .onKeyPress(.leftArrow) {
-          Task { @MainActor in configuration.slideIndexController.back() }
+          Task { @MainActor in stepBack() }
           return .handled
         }
         .onKeyPress(.space) {
-          Task { @MainActor in configuration.slideIndexController.forward() }
+          Task { @MainActor in stepForward() }
           return .handled
         }
         .onAppear {
@@ -173,7 +192,7 @@
 
           ToolbarItem(placement: .bottomBar) {
             Button {
-              configuration.slideIndexController.back()
+              stepBack()
             } label: {
               Label("Back", systemImage: "chevron.backward")
             }
@@ -189,7 +208,7 @@
 
           ToolbarItem(placement: .bottomBar) {
             Button {
-              configuration.slideIndexController.forward()
+              stepForward()
             } label: {
               Label("Next", systemImage: "chevron.forward")
             }
@@ -204,9 +223,9 @@
       DragGesture(minimumDistance: 100)
         .onEnded { value in
           if value.translation.width < 100 {
-            configuration.slideIndexController.forward()
+            stepForward()
           } else if value.translation.width > -100 {
-            configuration.slideIndexController.back()
+            stepBack()
           }
         }
     }

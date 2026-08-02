@@ -29,6 +29,8 @@ struct DepthModelCompareView: View {
 
   @State private var pickerItem: PhotosPickerItem?
   @State private var isFileImporterPresented = false
+  @State private var isPeerCaptureCameraPresented = false
+  @State private var isPeerReceiverPresented = false
   @State private var selectedModel: DepthModel = .embeddedDepth
   @State private var displayMode: DisplayMode = .compare
 
@@ -82,6 +84,22 @@ struct DepthModelCompareView: View {
           Label("ファイルから選択", systemImage: "folder.badge.plus")
             .font(.system(size: 22))
         }
+
+        #if os(iOS)
+          Button {
+            isPeerCaptureCameraPresented = true
+          } label: {
+            Label("このiPhoneで撮影", systemImage: "camera.badge.ellipsis")
+              .font(.system(size: 22))
+          }
+        #elseif os(macOS)
+          Button {
+            isPeerReceiverPresented = true
+          } label: {
+            Label("iPhoneから受信", systemImage: "iphone.and.arrow.forward")
+              .font(.system(size: 22))
+          }
+        #endif
       }
     }
     .fileImporter(
@@ -96,6 +114,21 @@ struct DepthModelCompareView: View {
     .onChange(of: selectedModel) { _, _ in
       Task { await runEstimation() }
     }
+    #if os(iOS)
+      .fullScreenCover(isPresented: $isPeerCaptureCameraPresented) {
+        PeerCaptureCameraView { data in
+          isPeerCaptureCameraPresented = false
+          Task { await loadImage(from: data) }
+        }
+      }
+    #elseif os(macOS)
+      .sheet(isPresented: $isPeerReceiverPresented) {
+        PeerCaptureReceiverView { data in
+          isPeerReceiverPresented = false
+          Task { await loadImage(from: data) }
+        }
+      }
+    #endif
   }
 
   @ViewBuilder
