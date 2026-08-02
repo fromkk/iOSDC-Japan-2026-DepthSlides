@@ -17,6 +17,7 @@ struct DepthModelSimulator: View {
       DepthModelCompareView()
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
+    .padding(theme.contentPadding)
   }
 
   var script: String = """

@@ -1,5 +1,6 @@
 #if canImport(UIKit)
   import DepthSlidesSlides
+  import MarkdownToSlide
   import SlideKit
   import SwiftUI
 
@@ -8,6 +9,7 @@
     var store: AppStore?
     @ObservedObject private var slideIndexController: SlideIndexController
     @Environment(\.presentationSyncCoordinator) private var syncCoordinator
+    @Environment(\.slideTheme) private var theme
     @FocusState private var isFocused: Bool
     @State private var isExporting = false
     @State private var exportURL: URL?
@@ -66,7 +68,10 @@
     private func slideView(store: AppStore? = nil) -> some View {
       ZStack(alignment: .topTrailing) {
         PresentationView(slideSize: configuration.size) {
-          SlideRouterView(slideIndexController: slideIndexController)
+          ZStack {
+            theme.backgroundColor
+            SlideRouterView(slideIndexController: slideIndexController)
+          }
         }
         .gesture(navigationGesture)
         .focusable()
@@ -139,7 +144,10 @@
       NavigationStack {
         VStack(spacing: 0) {
           PresentationView(slideSize: configuration.size) {
-            SlideRouterView(slideIndexController: slideIndexController)
+            ZStack {
+              theme.backgroundColor
+              SlideRouterView(slideIndexController: slideIndexController)
+            }
           }
           .aspectRatio(16 / 9, contentMode: .fit)
           .padding()

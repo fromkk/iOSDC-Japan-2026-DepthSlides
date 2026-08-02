@@ -16,6 +16,7 @@ struct BokehFilterSimulator: View {
       CIFilterBokehCompareView()
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
+    .padding(theme.contentPadding)
   }
 
   var script: String = """
