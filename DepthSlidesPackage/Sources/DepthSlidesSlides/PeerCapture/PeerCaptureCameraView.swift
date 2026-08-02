@@ -18,6 +18,11 @@
     @State private var statusMessage = ""
     @State private var configurationError: String?
     @State private var previewForwardingTask: Task<Void, Never>?
+    // Depthを保ったまま選べる範囲は機種・フォーマット依存で、固定の「24mm/35mm」等の
+    // ラベルでは選択肢として成立しない(選んでも同じ値にスナップされてしまう)ことが
+    // 実機検証で分かった。そのため実際にDepthが使える範囲から動的にプリセットを作る。
+    @State private var depthSafeFocalLengthRange: ClosedRange<CGFloat>?
+    @State private var selectedFocalLengthMM: CGFloat?
 
     var body: some View {
       ZStack {
@@ -33,7 +38,7 @@
               .buttonStyle(.borderedProminent)
           }
         } else {
-          CameraPreviewView(session: session.session)
+          CameraPreviewView(cameraSession: session)
             .ignoresSafeArea()
         }
 
@@ -50,6 +55,28 @@
             }
             .padding()
             Spacer()
+
+            if let depthSafeFocalLengthRange {
+              HStack(spacing: 4) {
+                ForEach(focalLengthPresets(for: depthSafeFocalLengthRange), id: \.self) { mm in
+                  Button {
+                    selectedFocalLengthMM = mm
+                    session.setZoom(toFocalLengthMM: mm)
+                  } label: {
+                    Text("\(Int(mm.rounded()))mm")
+                      .font(.system(size: 14, weight: .semibold))
+                      .foregroundStyle(selectedFocalLengthMM == mm ? .black : .white)
+                      .padding(.horizontal, 12)
+                      .padding(.vertical, 6)
+                      .background(
+                        selectedFocalLengthMM == mm ? Color.white : Color.black.opacity(0.4),
+                        in: Capsule()
+                      )
+                  }
+                }
+              }
+              .padding()
+            }
           }
 
           Spacer()
@@ -95,6 +122,17 @@
           try session.configure()
           session.startRunning()
           startForwardingPreview()
+          // configure()内で既にDepth対応範囲の中で「1倍に最も近い値」へズームが
+          // 合わせられているが、それは丸めていない生の値なのでプリセット(丸めた値)とは
+          // 一致しない。プリセットのうち最初の1つ(下限に最も近いもの)へ実際に
+          // 合わせ直し、UIの選択状態とも揃える。
+          if let range = session.depthSafeFocalLengthRangeMM {
+            depthSafeFocalLengthRange = range
+            if let firstPreset = focalLengthPresets(for: range).first {
+              selectedFocalLengthMM = firstPreset
+              session.setZoom(toFocalLengthMM: firstPreset)
+            }
+          }
         } catch {
           configurationError = "Depth撮影に対応したカメラが見つかりませんでした"
         }
@@ -120,6 +158,23 @@
         for await frame in session.previewFrames {
           syncCoordinator?.sendPreviewFrame(frame)
         }
+      }
+    }
+
+    /// 実機で計算した生の範囲(例: 34mm〜170mm)をそのまま出すと馴染みの薄い値になるため、
+    /// 実際のレンズでよくある焦点距離の中から最も近いものに丸めて表示・設定する。
+    private static let niceFocalLengthsMM: [CGFloat] = [
+      14, 15, 18, 20, 24, 28, 35, 50, 65, 85, 105, 135, 150, 170, 200, 300, 400, 500, 600, 800,
+    ]
+
+    private func focalLengthPresets(for range: ClosedRange<CGFloat>) -> [CGFloat] {
+      let mid = (range.lowerBound + range.upperBound) / 2
+      let rawTargets = [range.lowerBound, mid, range.upperBound]
+      var seen = Set<CGFloat>()
+      return rawTargets.compactMap { raw in
+        let nice = Self.niceFocalLengthsMM.min(by: { abs($0 - raw) < abs($1 - raw) }) ?? raw
+        guard seen.insert(nice).inserted else { return nil }
+        return nice
       }
     }
 
@@ -167,20 +222,79 @@
   }
 
   private struct CameraPreviewView: UIViewRepresentable {
-    let session: AVCaptureSession
+    let cameraSession: PeerCaptureCameraSession
 
     func makeUIView(context: Context) -> PreviewUIView {
       let view = PreviewUIView()
-      view.previewLayer.session = session
+      view.previewLayer.session = cameraSession.session
       view.previewLayer.videoGravity = .resizeAspectFill
+      // 縦横どちらの向きでも正しく表示されるよう、実在するpreviewLayerを
+      // セッション側の回転コーディネーターに渡す(詳細はPeerCaptureCameraSession参照)。
+      cameraSession.attachPreviewLayer(view.previewLayer)
+
+      let tapGesture = UITapGestureRecognizer(
+        target: context.coordinator, action: #selector(Coordinator.handleTap(_:)))
+      view.addGestureRecognizer(tapGesture)
+      context.coordinator.previewView = view
+
       return view
     }
 
     func updateUIView(_ uiView: PreviewUIView, context: Context) {}
+
+    func makeCoordinator() -> Coordinator {
+      Coordinator(cameraSession: cameraSession)
+    }
+
+    @MainActor
+    final class Coordinator: NSObject {
+      let cameraSession: PeerCaptureCameraSession
+      weak var previewView: PreviewUIView?
+
+      init(cameraSession: PeerCaptureCameraSession) {
+        self.cameraSession = cameraSession
+      }
+
+      @objc func handleTap(_ gesture: UITapGestureRecognizer) {
+        guard let previewView else { return }
+        let layerPoint = gesture.location(in: previewView)
+        let devicePoint = previewView.previewLayer.captureDevicePointConverted(
+          fromLayerPoint: layerPoint)
+        cameraSession.focus(at: devicePoint)
+        previewView.showFocusIndicator(at: layerPoint)
+      }
+    }
   }
 
   private final class PreviewUIView: UIView {
     override class var layerClass: AnyClass { AVCaptureVideoPreviewLayer.self }
     var previewLayer: AVCaptureVideoPreviewLayer { layer as! AVCaptureVideoPreviewLayer }
+
+    /// タップ・フォーカス位置を示す黄色い枠を一瞬表示して消す、標準的なカメラアプリの
+    /// フィードバックを再現する。
+    func showFocusIndicator(at point: CGPoint) {
+      let size: CGFloat = 70
+      let indicator = UIView(
+        frame: CGRect(x: point.x - size / 2, y: point.y - size / 2, width: size, height: size))
+      indicator.layer.borderColor = UIColor.systemYellow.cgColor
+      indicator.layer.borderWidth = 1.5
+      indicator.layer.cornerRadius = 4
+      indicator.alpha = 0
+      indicator.transform = CGAffineTransform(scaleX: 1.2, y: 1.2)
+      addSubview(indicator)
+
+      UIView.animate(
+        withDuration: 0.15,
+        animations: {
+          indicator.alpha = 1
+          indicator.transform = .identity
+        },
+        completion: { _ in
+          UIView.animate(
+            withDuration: 0.4, delay: 0.5, options: [],
+            animations: { indicator.alpha = 0 },
+            completion: { _ in indicator.removeFromSuperview() })
+        })
+    }
   }
 #endif

@@ -22,4 +22,11 @@ enum PresentationSyncMessage: Codable, Sendable {
   case slideIndex(
     senderID: UUID, sequence: Int, direction: SlideStepDirection?, resultingIndex: Int)
   case cameraPreviewFrame(jpegData: Data)
+
+  /// 接続確立時に互いに送り合う自己紹介。`platform`は"macOS"/"iOS"のような文字列。
+  /// 手動同期ボタン(`requestCurrentIndex`)で「Macを名指しで」問い合わせるために使う。
+  case hello(platform: String)
+  /// 手動同期用。接続先(基本的にはMac)へ「今のスライド位置を教えて」と問い合わせる。
+  /// 受け取った側は`slideIndex(direction: nil, ...)`で現在地を返す。
+  case requestCurrentIndex
 }

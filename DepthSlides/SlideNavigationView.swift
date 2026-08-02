@@ -25,7 +25,7 @@
       if let syncCoordinator {
         syncCoordinator.forward()
       } else {
-        stepForward()
+        configuration.slideIndexController.forward()
       }
     }
 
@@ -33,8 +33,13 @@
       if let syncCoordinator {
         syncCoordinator.back()
       } else {
-        stepBack()
+        configuration.slideIndexController.back()
       }
+    }
+
+    /// 押し間違い等でMacとズレたときに、接続中のMacの現在位置に合わせ直す。
+    private func syncFromMac() {
+      syncCoordinator?.syncFromMaster()
     }
 
     var body: some View {
@@ -103,6 +108,15 @@
           .tint(Color(.label))
           .buttonStyle(.glass)
           .disabled(isExporting)
+
+          Button {
+            syncFromMac()
+          } label: {
+            Label("Macと同期", systemImage: "arrow.triangle.2.circlepath")
+              .labelStyle(.iconOnly)
+          }
+          .tint(Color(.label))
+          .buttonStyle(.glass)
 
           if let store, store.hasExternalDisplay {
             Button {
@@ -188,6 +202,14 @@
               }
             }
             .disabled(isExporting)
+          }
+
+          ToolbarItem(placement: .primaryAction) {
+            Button {
+              syncFromMac()
+            } label: {
+              Label("Macと同期", systemImage: "arrow.triangle.2.circlepath")
+            }
           }
 
           ToolbarItem(placement: .bottomBar) {

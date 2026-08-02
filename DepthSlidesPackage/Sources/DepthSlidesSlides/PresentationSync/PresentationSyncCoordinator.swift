@@ -36,6 +36,17 @@ public final class PresentationSyncCoordinator {
   @ObservationIgnored private var nextSequence = 0
   @ObservationIgnored private var lastSeenSequence: [UUID: Int] = [:]
 
+  /// 手動同期ボタン用。接続確立時に`hello`で交換したplatform文字列("macOS"/"iOS")を
+  /// 接続IDごとに記録しておき、「Macを名指しで」`requestCurrentIndex`を送れるようにする。
+  @ObservationIgnored private var peerPlatforms: [PresentationSyncConnectionID: String] = [:]
+  @ObservationIgnored private let localPlatform: String = {
+    #if os(macOS)
+      "macOS"
+    #else
+      "iOS"
+    #endif
+  }()
+
   /// Feature B: 直近に受信したプレビューフレーム。`@Observable`なので更新されると
   /// これを読んでいるSwiftUI Viewが自動的に再描画される。
   public private(set) var latestPreviewFrameData: Data?
@@ -48,8 +59,8 @@ public final class PresentationSyncCoordinator {
 
     messagesTask = Task { [weak self] in
       guard let self else { return }
-      for await message in self.connectionManager.incomingMessages {
-        await self.handle(message)
+      for await (id, message) in self.connectionManager.incomingMessages {
+        await self.handle(message, from: id)
       }
     }
     localEventsTask = Task { [weak self] in
@@ -116,7 +127,18 @@ public final class PresentationSyncCoordinator {
     Task { await sender.submit(jpegData) }
   }
 
-  private func handle(_ message: PresentationSyncMessage) async {
+  /// 手動同期ボタン用。押し間違い等でズレたときに、接続中のMacへ現在のスライド
+  /// 位置を問い合わせて合わせる（自分の値を押し付けるのではなく、Macを基準とする）。
+  /// 接続中のMacが見つからない場合は何もしない。
+  public func syncFromMaster() {
+    guard let masterID = peerPlatforms.first(where: { $0.value == "macOS" })?.key else { return }
+    let connectionManager = self.connectionManager
+    Task { await connectionManager.send(.requestCurrentIndex, to: masterID) }
+  }
+
+  private func handle(_ message: PresentationSyncMessage, from connectionID: PresentationSyncConnectionID)
+    async
+  {
     switch message {
     case .slideIndex(let senderID, let sequence, let direction, let resultingIndex):
       // 全端末が自分自身にもadvertise+browseしうる(Bonjourは自端末の広告も
@@ -144,19 +166,27 @@ public final class PresentationSyncCoordinator {
       isApplyingRemoteChange = false
     case .cameraPreviewFrame(let jpegData):
       latestPreviewFrameData = jpegData
+    case .hello(let platform):
+      peerPlatforms[connectionID] = platform
+    case .requestCurrentIndex:
+      guard let slideIndexController else { return }
+      let message = nextSlideIndexMessage(
+        direction: nil, resultingIndex: slideIndexController.currentIndex)
+      await connectionManager.send(message, to: connectionID)
     }
   }
 
   private func handle(_ event: PresentationSyncLocalEvent) async {
     switch event {
     case .connectionReady(let id):
+      await connectionManager.send(.hello(platform: localPlatform), to: id)
       // 途中参加してきた端末がスライド0のまま止まらないよう、現在地を即送信する。
       guard let slideIndexController else { return }
       let message = nextSlideIndexMessage(
         direction: nil, resultingIndex: slideIndexController.currentIndex)
       await connectionManager.send(message, to: id)
-    case .connectionLost:
-      break
+    case .connectionLost(let id):
+      peerPlatforms.removeValue(forKey: id)
     }
   }
 }

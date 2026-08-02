@@ -25,13 +25,16 @@ actor PresentationSyncConnectionManager {
   let localEvents: AsyncStream<PresentationSyncLocalEvent>
   private let localEventsContinuation: AsyncStream<PresentationSyncLocalEvent>.Continuation
 
-  let incomingMessages: AsyncStream<PresentationSyncMessage>
-  private let incomingMessagesContinuation: AsyncStream<PresentationSyncMessage>.Continuation
+  /// 手動同期ボタン(`requestCurrentIndex`)への返信や、`hello`の送信元記録のために
+  /// どのコネクションから届いたメッセージかを一緒に流す。
+  let incomingMessages: AsyncStream<(id: PresentationSyncConnectionID, message: PresentationSyncMessage)>
+  private let incomingMessagesContinuation:
+    AsyncStream<(id: PresentationSyncConnectionID, message: PresentationSyncMessage)>.Continuation
 
   init() {
     (localEvents, localEventsContinuation) = AsyncStream.makeStream(of: PresentationSyncLocalEvent.self)
     (incomingMessages, incomingMessagesContinuation) = AsyncStream.makeStream(
-      of: PresentationSyncMessage.self)
+      of: (id: PresentationSyncConnectionID, message: PresentationSyncMessage).self)
   }
 
   func add(_ connection: PresentationSyncConnection) {
@@ -68,10 +71,11 @@ actor PresentationSyncConnectionManager {
   }
 
   private func setupReceiver(_ connection: PresentationSyncConnection) -> Task<Void, Never> {
-    Task {
+    let id = connection.id
+    return Task {
       do {
         for try await (message, _) in connection.messages {
-          incomingMessagesContinuation.yield(message)
+          incomingMessagesContinuation.yield((id: id, message: message))
         }
       } catch {
         logger.error("receive loop ended: \(error.localizedDescription, privacy: .public)")

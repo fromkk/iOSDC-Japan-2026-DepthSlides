@@ -2,6 +2,10 @@
   import AVFoundation
   import CoreImage
   import Foundation
+  import OSLog
+
+  private let logger = Logger(
+    subsystem: "info.fromkk.DepthSlides", category: "PeerCaptureCameraSession")
 
   /// iPhone側: Depth配信を必ず有効にしたカメラセッションで撮影する。
   /// 撮影結果は`EmbeddedDepthExtractor.hasEmbeddedDepth`で実際に検証し、
@@ -19,6 +23,10 @@
     let session = AVCaptureSession()
     private let photoOutput = AVCapturePhotoOutput()
     private var captureContinuation: CheckedContinuation<Data, Error>?
+    private var activeDevice: AVCaptureDevice?
+    private weak var previewLayer: AVCaptureVideoPreviewLayer?
+    private var rotationCoordinator: AVCaptureDevice.RotationCoordinator?
+    private var previewRotationObservation: NSKeyValueObservation?
     // AVCaptureSessionのstartRunning/stopRunningはブロッキング呼び出しのためバックグラウンド
     // スレッドで呼ぶ必要があるが、Swift 6の並行性検査はMainActor隔離プロパティを
     // 別Taskへ直接「送る」ことを警告する。開始/停止呼び出し自体はドキュメント上
@@ -57,9 +65,13 @@
         mediaType: .video,
         position: .unspecified
       )
+      // デフォルトのactiveFormatだけでなく、そのデバイスが持つ全フォーマットの中に
+      // Depth対応のものが1つでもあればよい(後でsetPreferredDepthFormatIfAvailable(_:)が
+      // 実際に使うフォーマットを選び直す)。activeFormatだけで判定すると、たまたま
+      // デフォルトがDepth非対応なだけの機種を早々に候補から外してしまう。
       guard
-        let device = discovery.devices.first(where: {
-          !$0.activeFormat.supportedDepthDataFormats.isEmpty
+        let device = discovery.devices.first(where: { device in
+          device.formats.contains { !$0.supportedDepthDataFormats.isEmpty }
         })
       else {
         throw CaptureError.noDepthCapableCameraAvailable
@@ -73,6 +85,8 @@
       }
       guard session.canAddInput(input) else { throw CaptureError.configurationFailed }
       session.addInput(input)
+      activeDevice = device
+      selectDepthFriendlyFormatIfAvailable(for: device)
 
       guard session.canAddOutput(photoOutput) else { throw CaptureError.configurationFailed }
       session.addOutput(photoOutput)
@@ -89,6 +103,197 @@
       if session.canAddOutput(videoDataOutput) {
         session.addOutput(videoDataOutput)
       }
+
+      applyDepthSafeZoom()
+      setUpRotationCoordinatorIfNeeded()
+    }
+
+    /// デバイスのデフォルトの`activeFormat`は、Depthが1点固定ズーム(例:ちょうど4.0倍)
+    /// でしか使えないものになっていることがある。iPhone純正カメラのPhotoモード
+    /// (Portraitモードを明示的に選ばなくてもDepthが付くことがある)に近い体験にするため、
+    /// そのデバイスが持つフォーマットの中から「1倍(無ズーム)でもDepthが使える」ものを
+    /// 探して明示的に選び直す。見つからなければデフォルトのままにする。
+    private func selectDepthFriendlyFormatIfAvailable(for device: AVCaptureDevice) {
+      let candidate = device.formats.first { format in
+        guard !format.supportedDepthDataFormats.isEmpty else { return false }
+        return format.supportedVideoZoomRangesForDepthDataDelivery.contains { $0.contains(1.0) }
+      }
+      guard let candidate else {
+        logger.log("selectDepthFriendlyFormatIfAvailable: 1倍でDepth対応のフォーマットは見つからず")
+        return
+      }
+      do {
+        try device.lockForConfiguration()
+        device.activeFormat = candidate
+        device.unlockForConfiguration()
+        logger.log(
+          "selectDepthFriendlyFormatIfAvailable: 1倍でDepth対応のフォーマットに切り替えた: \(candidate.supportedVideoZoomRangesForDepthDataDelivery.map { "\($0.lowerBound)...\($0.upperBound)" }, privacy: .public)"
+        )
+      } catch {
+        logger.error(
+          "selectDepthFriendlyFormatIfAvailable failed: \(error.localizedDescription, privacy: .public)"
+        )
+      }
+    }
+
+    // MARK: - 回転補正
+
+    /// `AVCaptureVideoPreviewLayer`が実際に画面に出た時点で`CameraPreviewView`から呼ばれる。
+    /// (縦/横どちらで持っても正しい向きにするには、90度固定ではなく実機の向きを
+    /// 継続的に監視する`AVCaptureDevice.RotationCoordinator`が必要。プレビュー用の
+    /// 回転角(`videoRotationAngleForHorizonLevelPreview`)は、実在するpreviewLayerを
+    /// 渡さないと常に0度を返す仕様のため、Viewから渡してもらう必要がある)
+    func attachPreviewLayer(_ layer: AVCaptureVideoPreviewLayer) {
+      previewLayer = layer
+      setUpRotationCoordinatorIfNeeded()
+    }
+
+    private func setUpRotationCoordinatorIfNeeded() {
+      guard rotationCoordinator == nil, let device = activeDevice, let previewLayer else { return }
+      let coordinator = AVCaptureDevice.RotationCoordinator(device: device, previewLayer: previewLayer)
+      rotationCoordinator = coordinator
+
+      applyPreviewRotationAngle(coordinator.videoRotationAngleForHorizonLevelPreview)
+
+      previewRotationObservation = coordinator.observe(
+        \.videoRotationAngleForHorizonLevelPreview, options: [.new]
+      ) { [weak self] _, change in
+        guard let angle = change.newValue else { return }
+        Task { @MainActor in self?.applyPreviewRotationAngle(angle) }
+      }
+      // NOTE: photoOutput側(videoRotationAngleForHorizonLevelCapture)には意図的に
+      // 手を出さない。ここに回転角を設定するとDepth Data Deliveryが無効になる
+      // (Depthが埋め込まれなくなる)現象を実機で確認したため。photoOutputは
+      // 何もしなくても自動で正しい向きの写真を出力してくれる。
+    }
+
+    /// 「今どちらを向けてフレーミングしているか」に対応する角度。プレビュー層本体と、
+    /// Macへライブ配信するvideoDataOutputの両方に適用する(どちらも"今見えているもの")。
+    private func applyPreviewRotationAngle(_ angle: CGFloat) {
+      if let connection = previewLayer?.connection, connection.isVideoRotationAngleSupported(angle) {
+        connection.videoRotationAngle = angle
+      }
+      if let connection = videoDataOutput.connection(with: .video),
+        connection.isVideoRotationAngleSupported(angle)
+      {
+        connection.videoRotationAngle = angle
+      }
+    }
+
+    /// タップされた位置(`AVCaptureVideoPreviewLayer.captureDevicePointConverted(fromLayerPoint:)`
+    /// で変換済みの、0,0〜1,1のデバイス座標)にフォーカスと露出を合わせる。
+    func focus(at devicePoint: CGPoint) {
+      guard let device = activeDevice else { return }
+      do {
+        try device.lockForConfiguration()
+        if device.isFocusPointOfInterestSupported {
+          device.focusPointOfInterest = devicePoint
+          device.focusMode = .autoFocus
+        }
+        if device.isExposurePointOfInterestSupported {
+          device.exposurePointOfInterest = devicePoint
+          device.exposureMode = .autoExpose
+        }
+        device.unlockForConfiguration()
+      } catch {
+        logger.error("focus(at:) failed: \(error.localizedDescription, privacy: .public)")
+      }
+    }
+
+    /// Depth Data Deliveryが有効な状態で使えるズーム範囲は機種・フォーマットによって
+    /// 大きく異なり、実機では単一の固定値(例: ちょうど4.0倍のみ)や、1倍を含まない
+    /// 連続範囲(例: 2.0〜10.0倍)しか許容しないことも確認している。できるだけ自然な
+    /// 画角(1倍=無ズーム)に近づけたいので、初期状態ではDepth対応範囲の中で最も
+    /// 1倍に近い値を選ぶ(範囲に1倍そのものが含まれていればそれを使う)。
+    private func applyDepthSafeZoom() {
+      guard let device = activeDevice else { return }
+      let depthSafeRanges = device.activeFormat.supportedVideoZoomRangesForDepthDataDelivery
+      guard let factor = Self.nearestZoomFactor(to: 1.0, in: depthSafeRanges) else { return }
+
+      logger.log(
+        "applyDepthSafeZoom: depthSafeRanges=\(depthSafeRanges.map { "\($0.lowerBound)...\($0.upperBound)" }, privacy: .public) applied=\(factor, privacy: .public)"
+      )
+      do {
+        try device.lockForConfiguration()
+        device.videoZoomFactor = factor
+        device.unlockForConfiguration()
+      } catch {
+        logger.error("applyDepthSafeZoom failed: \(error.localizedDescription, privacy: .public)")
+      }
+    }
+
+    /// 現在のフォーマットでDepthを保ったまま実際に選べる35mm換算焦点距離(mm)の範囲。
+    /// 複数の不連続な区間がある場合は最も幅の広いものを使う。範囲が存在しない
+    /// (Depth非対応)場合や、実質1点しかなく選択の意味が無い場合はnilを返す
+    /// (Viewはこれを見てズーム選択UIを出すかどうかを決める)。
+    var depthSafeFocalLengthRangeMM: ClosedRange<CGFloat>? {
+      guard let device = activeDevice else { return nil }
+      let format = device.activeFormat
+      let baseFocalLength = Self.equivalentFocalLength35mm(for: format)
+      guard baseFocalLength > 0 else { return nil }
+      let ranges = format.supportedVideoZoomRangesForDepthDataDelivery
+      guard
+        let widest = ranges.max(by: { ($0.upperBound - $0.lowerBound) < ($1.upperBound - $1.lowerBound) }
+        )
+      else { return nil }
+      let lowerMM = widest.lowerBound * baseFocalLength
+      let upperMM = widest.upperBound * baseFocalLength
+      guard upperMM - lowerMM > 1 else { return nil }
+      return lowerMM...upperMM
+    }
+
+    /// 目標の35mm換算焦点距離(mm)に、Depthを保ったまま最も近づくようズーム倍率を設定する。
+    @discardableResult
+    func setZoom(toFocalLengthMM targetMM: CGFloat) -> Bool {
+      guard let device = activeDevice else { return false }
+      let format = device.activeFormat
+      let baseFocalLength = Self.equivalentFocalLength35mm(for: format)
+      guard baseFocalLength > 0 else { return false }
+      let desiredFactor = targetMM / baseFocalLength
+      let depthSafeRanges = format.supportedVideoZoomRangesForDepthDataDelivery
+      guard let factor = Self.nearestZoomFactor(to: desiredFactor, in: depthSafeRanges) else {
+        return false
+      }
+      logger.log(
+        "setZoom(toFocalLengthMM: \(targetMM, privacy: .public)): desired=\(desiredFactor, privacy: .public) applied=\(factor, privacy: .public)"
+      )
+      do {
+        try device.lockForConfiguration()
+        device.videoZoomFactor = factor
+        device.unlockForConfiguration()
+        return true
+      } catch {
+        return false
+      }
+    }
+
+    /// フォーマットの対角画角(度)から35mm判換算焦点距離を逆算する。
+    /// 機種によって広角レンズの実焦点距離が異なる(24mm前後〜26mm前後など)ため、
+    /// 固定のズーム倍率テーブルではなく画角から都度計算する。
+    private static func equivalentFocalLength35mm(for format: AVCaptureDevice.Format) -> CGFloat {
+      let fovRadians = CGFloat(format.videoFieldOfView) * .pi / 180
+      guard fovRadians > 0 else { return 0 }
+      let diagonal35mm: CGFloat = 43.2666  // 36mm x 24mmフルサイズの対角線長
+      return (diagonal35mm / 2) / tan(fovRadians / 2)
+    }
+
+    /// 複数の(不連続なこともある)ズーム範囲の中から、目標値に最も近い値を選ぶ。
+    /// 範囲が空ならnil。
+    private static func nearestZoomFactor(to desired: CGFloat, in ranges: [ClosedRange<CGFloat>])
+      -> CGFloat?
+    {
+      guard !ranges.isEmpty else { return nil }
+      var best = desired
+      var bestDistance = CGFloat.greatestFiniteMagnitude
+      for range in ranges {
+        let clamped = max(range.lowerBound, min(desired, range.upperBound))
+        let distance = abs(clamped - desired)
+        if distance < bestDistance {
+          bestDistance = distance
+          best = clamped
+        }
+      }
+      return best
     }
 
     func startRunning() {
@@ -177,7 +382,11 @@
       lock.unlock()
 
       guard let imageBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return nil }
-      let ciImage = CIImage(cvImageBuffer: imageBuffer)
+      // カメラのライブ映像はHDRで届くことがあり、そのままJPEGエンコードしようとすると
+      // CoreImageが自動でHDRゲインマップ生成を試みて
+      // 「Cannot create a gainmap if the hdrImage is not a valid CIImage」という警告を
+      // 大量に出す。プレビュー用途にHDRは不要なので、生成時点でSDRへトーンマップして回避する。
+      let ciImage = CIImage(cvImageBuffer: imageBuffer, options: [.toneMapHDRtoSDR: true])
       let longEdge = max(ciImage.extent.width, ciImage.extent.height)
       guard longEdge > 0 else { return nil }
       let scale = targetLongEdge / longEdge

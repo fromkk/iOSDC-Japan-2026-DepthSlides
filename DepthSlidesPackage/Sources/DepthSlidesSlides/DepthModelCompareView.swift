@@ -50,11 +50,34 @@ struct DepthModelCompareView: View {
 
   var body: some View {
     VStack(spacing: 16) {
-      ZStack {
+      ZStack(alignment: .topTrailing) {
         RoundedRectangle(cornerRadius: 12)
           .fill(.black.opacity(0.03))
 
         contentView
+
+        // 他のボタンと並べた行の中だと押しにくいという指摘を受け、コーナーに
+        // 独立したフローティングボタンとして配置している（SlideNavigationView の
+        // 「Export PDF」ボタンと同じ見た目・置き方）。
+        #if os(iOS)
+          Button {
+            isPeerCaptureCameraPresented = true
+          } label: {
+            Image(systemName: "camera.badge.ellipsis")
+              .font(.system(size: 20))
+          }
+          .buttonStyle(.glass)
+          .padding(12)
+        #elseif os(macOS)
+          Button {
+            isPeerReceiverPresented = true
+          } label: {
+            Image(systemName: "iphone.and.arrow.forward")
+              .font(.system(size: 20))
+          }
+          .buttonStyle(.glass)
+          .padding(12)
+        #endif
       }
       .frame(maxWidth: .infinity, maxHeight: .infinity)
 
@@ -84,22 +107,6 @@ struct DepthModelCompareView: View {
           Label("ファイルから選択", systemImage: "folder.badge.plus")
             .font(.system(size: 22))
         }
-
-        #if os(iOS)
-          Button {
-            isPeerCaptureCameraPresented = true
-          } label: {
-            Label("このiPhoneで撮影", systemImage: "camera.badge.ellipsis")
-              .font(.system(size: 22))
-          }
-        #elseif os(macOS)
-          Button {
-            isPeerReceiverPresented = true
-          } label: {
-            Label("iPhoneから受信", systemImage: "iphone.and.arrow.forward")
-              .font(.system(size: 22))
-          }
-        #endif
       }
     }
     .fileImporter(
