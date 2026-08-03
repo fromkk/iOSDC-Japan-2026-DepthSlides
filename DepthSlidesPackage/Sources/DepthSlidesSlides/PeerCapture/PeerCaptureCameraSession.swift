@@ -2,6 +2,7 @@
   import AVFoundation
   import CoreImage
   import Foundation
+  import ImageIO
   import OSLog
 
   private let logger = Logger(
@@ -320,6 +321,13 @@
       settings.isDepthDataDeliveryEnabled = true
       settings.embedsDepthDataInPhoto = true
 
+      // photoOutputの接続に回転角を設定するとDepth Data Deliveryが無効になるため
+      // (setUpRotationCoordinatorIfNeeded内のNOTE参照)、シャッターを切る瞬間の
+      // 実機の向きだけ控えておき、撮影後にEXIF Orientationを書き換えて補正する。
+      // 何もしないと写真のEXIFは縦持ち前提の固定値になり、横持ちで撮った写真が
+      // 受信側(Mac)で90度回転して表示される。
+      let captureAngle = rotationCoordinator?.videoRotationAngleForHorizonLevelCapture
+
       let data = try await withCheckedThrowingContinuation {
         (continuation: CheckedContinuation<Data, Error>) in
         captureContinuation = continuation
@@ -329,7 +337,49 @@
       guard EmbeddedDepthExtractor.hasEmbeddedDepth(in: data) else {
         throw CaptureError.depthNotEmbedded
       }
-      return data
+
+      guard let captureAngle,
+        let corrected = Self.orientationCorrectedData(data, captureAngle: captureAngle),
+        EmbeddedDepthExtractor.hasEmbeddedDepth(in: corrected)
+      else {
+        logger.error("orientation correction skipped or failed; returning original photo data")
+        return data
+      }
+      return corrected
+    }
+
+    /// 撮影の瞬間の回転角(0/90/180/270度)をEXIF Orientationへ変換し、
+    /// `CGImageDestinationCopyImageSource`によるロスレスコピーでメタデータだけ
+    /// 書き換える。画素は再エンコードしないため、埋め込みDepthも保持される
+    /// (呼び出し側で念のため`hasEmbeddedDepth`を再検証している)。
+    private static func orientationCorrectedData(_ data: Data, captureAngle: CGFloat) -> Data? {
+      let normalized = (captureAngle.truncatingRemainder(dividingBy: 360) + 360)
+        .truncatingRemainder(dividingBy: 360)
+      let orientation: CGImagePropertyOrientation =
+        switch Int(normalized.rounded()) {
+        case 90: .right
+        case 180: .down
+        case 270: .left
+        default: .up
+        }
+
+      guard let source = CGImageSourceCreateWithData(data as CFData, nil),
+        let type = CGImageSourceGetType(source)
+      else { return nil }
+      let output = NSMutableData()
+      guard
+        let destination = CGImageDestinationCreateWithData(
+          output, type, CGImageSourceGetCount(source), nil)
+      else { return nil }
+      let options = [kCGImageDestinationOrientation: orientation.rawValue] as CFDictionary
+      var copyError: Unmanaged<CFError>?
+      guard CGImageDestinationCopyImageSource(destination, source, options, &copyError) else {
+        logger.error(
+          "CGImageDestinationCopyImageSource failed: \(String(describing: copyError?.takeRetainedValue()), privacy: .public)"
+        )
+        return nil
+      }
+      return output as Data
     }
   }
 
