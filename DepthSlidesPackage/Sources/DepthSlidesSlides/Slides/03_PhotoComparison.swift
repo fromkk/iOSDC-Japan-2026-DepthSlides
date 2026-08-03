@@ -12,6 +12,7 @@ struct PhotoComparison: View {
   }
 
   @Phase var phase: SlidePhase
+  @Environment(\.slideTheme) var theme
 
   var body: some View {
     Group {
@@ -51,11 +52,10 @@ struct PhotoComparison: View {
             Text("正解は←")
               .font(SlideTheme.default.headingH3Font)
           }
-
         }
       }
-
     }
+    .padding(theme.contentPadding)
   }
 
   var script: String {
