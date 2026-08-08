@@ -39,8 +39,8 @@ struct SensorSize: View {
           .frame(width: 600)
           .multilineTextAlignment(.leading)
       }
+      .padding(slideTheme.contentPadding)
     }
-    .padding(slideTheme.contentPadding)
   }
 
   var script: String = """

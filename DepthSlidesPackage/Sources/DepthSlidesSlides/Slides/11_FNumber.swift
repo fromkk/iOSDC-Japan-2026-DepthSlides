@@ -72,9 +72,9 @@ struct FNumber: View {
           .labelsHidden()
           .fixedSize()
         }
+        .padding(slideTheme.contentPadding)
       }
     }
-    .padding(slideTheme.contentPadding)
     .onAppear {
       uvcSession.startMonitoring()
     }
