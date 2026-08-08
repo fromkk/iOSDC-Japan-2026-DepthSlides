@@ -37,13 +37,13 @@ struct PortraitMode: View {
         Image(.IMG_2581)
           .resizable()
           .aspectRatio(contentMode: .fit)
-          .frame(width: 400)
+          .frame(width: 600)
           .padding(.trailing, slideTheme.contentPadding)
       case .second:
         Image(.IMG_1606)
           .resizable()
           .aspectRatio(contentMode: .fit)
-          .frame(width: 400)
+          .frame(width: 600)
           .padding(.trailing, slideTheme.contentPadding)
       }
     }
