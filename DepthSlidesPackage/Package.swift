@@ -18,6 +18,10 @@ let package = Package(
       name: "DepthSlidesSlides",
       targets: ["DepthSlidesSlides"]
     ),
+    .library(
+      name: "DinnerChimeKit",
+      targets: ["DinnerChimeKit"]
+    ),
   ],
   dependencies: [
     .package(url: "https://github.com/mtj0928/SlideKit", branch: "main"),
@@ -32,9 +36,13 @@ let package = Package(
       ]
     ),
     .target(
+      name: "DinnerChimeKit"
+    ),
+    .target(
       name: "DepthSlidesSlides",
       dependencies: [
         "MarkdownToSlide",
+        "DinnerChimeKit",
         .product(name: "SlideKit", package: "SlideKit"),
       ],
       resources: [

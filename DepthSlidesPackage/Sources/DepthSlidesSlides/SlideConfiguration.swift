@@ -8,6 +8,7 @@ public struct SlideConfiguration {
   public let slideIndexController = SlideIndexController {
     TitleSlide()
     ProfileSlide()
+    AnnounceSlide()
     PhotoComparison()
     HowCameraWorks()
     CameraObscuraOrigin()
