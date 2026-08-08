@@ -4,15 +4,26 @@ import OSLog
 
 private let logger = Logger(subsystem: "info.fromkk.DepthSlides", category: "UVCCameraSession")
 
-/// f値スライド用: 外部UVCカメラ（キャプチャデバイスやUVC出力のミラーレス機など）
-/// またはContinuity Camera経由のiPhoneが接続されていれば、そのライブ映像を
+/// f値スライド用: 内蔵カメラ、または外部UVCカメラ（キャプチャデバイスやUVC出力の
+/// ミラーレス機など）・Continuity Camera経由のiPhoneのライブ映像を
 /// モニターするためだけのセッション。Depth合成や撮影機能は持たない。
 @MainActor
 @Observable
 final class UVCCameraSession: NSObject {
+  /// プレビューに使う入力ソース。
+  enum Source: Hashable {
+    /// Mac内蔵（FaceTime）カメラ。
+    case builtIn
+    /// 外部UVCカメラまたはContinuity Camera。
+    case external
+  }
+
   let session = AVCaptureSession()
 
-  private(set) var isAvailable = false
+  /// 現在接続されているデバイスから選択可能なソース。
+  private(set) var availableSources: Set<Source> = []
+  /// 表示中のソース。`nil` は非表示（セッション停止）。
+  private(set) var selectedSource: Source?
 
   @ObservationIgnored private var isMonitoring = false
   @ObservationIgnored private var currentInput: AVCaptureDeviceInput?
@@ -45,8 +56,15 @@ final class UVCCameraSession: NSObject {
     // 次にこのスライドへ戻ってきたときに同じ物理デバイスへすぐ再接続できるよう、
     // 停止と同時に入力も外してデバイスの占有を手放す。
     removeCurrentInput()
-    isAvailable = false
+    availableSources = []
+    selectedSource = nil
     stopRunning()
+  }
+
+  /// 表示するソースを切り替える。`nil` で非表示（セッション停止）。
+  func select(_ source: Source?) {
+    selectedSource = source
+    applySelection()
   }
 
   private func observeDeviceNotifications() {
@@ -65,33 +83,56 @@ final class UVCCameraSession: NSObject {
   }
 
   private func refreshDevices() {
-    let discovery = AVCaptureDevice.DiscoverySession(
-      deviceTypes: [.external, .continuityCamera],
-      mediaType: .video,
-      position: .unspecified
-    )
-    let devices = discovery.devices
+    var sources: Set<Source> = []
+    if device(for: .builtIn) != nil { sources.insert(.builtIn) }
+    if device(for: .external) != nil { sources.insert(.external) }
     logger.log(
-      "refreshDevices(.external+.continuityCamera/.video): count=\(devices.count, privacy: .public)"
+      "refreshDevices: builtIn=\(sources.contains(.builtIn), privacy: .public) external=\(sources.contains(.external), privacy: .public)"
     )
 
-    if let currentDevice = currentInput?.device, devices.contains(currentDevice) {
+    availableSources = sources
+    if let selectedSource, !sources.contains(selectedSource) {
+      self.selectedSource = nil
+    }
+    applySelection()
+  }
+
+  private func device(for source: Source) -> AVCaptureDevice? {
+    let deviceTypes: [AVCaptureDevice.DeviceType] =
+      switch source {
+      case .builtIn: [.builtInWideAngleCamera]
+      case .external: [.external, .continuityCamera]
+      }
+    return AVCaptureDevice.DiscoverySession(
+      deviceTypes: deviceTypes,
+      mediaType: .video,
+      position: .unspecified
+    ).devices.first
+  }
+
+  /// `selectedSource`に合わせて入力の付け替えとセッションの起動/停止を行う。
+  /// 非表示中はカメラを掴まない（インジケータランプを点けない）よう、
+  /// 選択が外れたら入力を外してセッションも止める。
+  private func applySelection() {
+    guard let selectedSource, let device = device(for: selectedSource) else {
+      removeCurrentInput()
+      stopRunning()
       return
     }
 
-    guard let device = devices.first else {
-      removeCurrentInput()
-      isAvailable = false
+    if currentInput?.device == device {
+      startRunning()
       return
     }
 
     do {
       try attach(device)
-      isAvailable = true
       startRunning()
     } catch {
       logger.error("attach(device:) failed: \(error.localizedDescription, privacy: .public)")
-      isAvailable = false
+      self.selectedSource = nil
+      removeCurrentInput()
+      stopRunning()
     }
   }
 
