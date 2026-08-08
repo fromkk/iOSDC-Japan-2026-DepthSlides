@@ -10,6 +10,7 @@ public struct SlideConfiguration {
     ProfileSlide()
     AnnounceSlide()
     PhotoComparison()
+    AboutCamera()
     HowCameraWorks()
     CameraObscuraOrigin()
     PinholeCameraSimulation()
