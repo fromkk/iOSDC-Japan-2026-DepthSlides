@@ -13,14 +13,18 @@ struct TitleSlide: View {
       VStack(alignment: .leading, spacing: 120) {
         Text("複数の深度推定モデルを比較して、iPhoneで撮影した写真のボケをミラーレス級に近づける")
           .font(theme.headingH1Font)
+          .oldLensLight(.title)
 
         Text("iOSDC Japan 2026 @fromkk")
           .font(theme.headingH2Font)
           .foregroundStyle(theme.secondaryTextColor)
+          .oldLensLight(.subtle)
           .frame(maxWidth: .infinity, alignment: .trailing)
       }
     }
     .padding(theme.contentPadding)
+    .frame(maxWidth: .infinity, maxHeight: .infinity)
+    .background { OldLensLightLeakBackground() }
   }
 
   var script: String = """
