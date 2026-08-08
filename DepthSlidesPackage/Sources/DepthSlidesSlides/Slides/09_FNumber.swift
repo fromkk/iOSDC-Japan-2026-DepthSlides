@@ -9,7 +9,15 @@ struct FNumber: View {
   let converter = MarkdownToSlideConverter()
 
   @State private var uvcSession = UVCCameraSession()
-  @State private var isShowingUVCPreview = false
+
+  private var isShowingPreview: Bool { uvcSession.selectedSource != nil }
+
+  private var sourceSelection: Binding<UVCCameraSession.Source?> {
+    Binding(
+      get: { uvcSession.selectedSource },
+      set: { uvcSession.select($0) }
+    )
+  }
 
   var body: some View {
     HStack {
@@ -34,26 +42,35 @@ struct FNumber: View {
         }
       }
 
-      if uvcSession.isAvailable {
+      if !uvcSession.availableSources.isEmpty {
         VStack {
-          // トグルのたびにUVCCameraPreviewViewをツリーから外し／戻すと、その都度
+          // 切り替えのたびにUVCCameraPreviewViewをツリーから外し／戻すと、その都度
           // AVCaptureVideoPreviewLayerが生成し直され、直前のレイヤーの後始末と
           // 新しいレイヤーのsession接続がタイミングによっては競合し、まれに
           // 何も映らない状態になることを確認した。表示中かどうかに関わらず
           // Viewはツリーに残したまま、見た目だけをopacity/frameで切り替える。
           UVCCameraPreviewView(session: uvcSession)
             .aspectRatio(16.0 / 9.0, contentMode: .fit)
-            .frame(width: isShowingUVCPreview ? 800 : 0)
-            .opacity(isShowingUVCPreview ? 1 : 0)
-            .padding(.trailing, isShowingUVCPreview ? slideTheme.contentPadding : 0)
+            .frame(width: isShowingPreview ? 800 : 0)
+            .opacity(isShowingPreview ? 1 : 0)
+            .padding(.trailing, isShowingPreview ? slideTheme.contentPadding : 0)
 
-          if !isShowingUVCPreview {
+          if !isShowingPreview {
             Spacer()
           }
 
-          Button(isShowingUVCPreview ? "カメラの入力を隠す" : "カメラの入力を表示") {
-            isShowingUVCPreview.toggle()
+          Picker("カメラ", selection: sourceSelection) {
+            Text("非表示").tag(UVCCameraSession.Source?.none)
+            if uvcSession.availableSources.contains(.builtIn) {
+              Text("内蔵カメラ").tag(UVCCameraSession.Source?.some(.builtIn))
+            }
+            if uvcSession.availableSources.contains(.external) {
+              Text("UVC").tag(UVCCameraSession.Source?.some(.external))
+            }
           }
+          .pickerStyle(.segmented)
+          .labelsHidden()
+          .fixedSize()
         }
       }
     }
@@ -63,11 +80,6 @@ struct FNumber: View {
     }
     .onDisappear {
       uvcSession.stopMonitoring()
-    }
-    .onChange(of: uvcSession.isAvailable) { _, isAvailable in
-      if !isAvailable {
-        isShowingUVCPreview = false
-      }
     }
   }
 
