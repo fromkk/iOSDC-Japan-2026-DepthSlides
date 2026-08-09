@@ -91,7 +91,7 @@ struct FNumber: View {
     この絞り具合を表すのが f値 で、焦点距離を絞りの実直径で割った値です。
     """
 
-  var transition: AnyTransition = AnyTransition(AwesomeTransition())
+  var transition: AnyTransition = AnyTransition.awesome
 }
 
 #Preview {

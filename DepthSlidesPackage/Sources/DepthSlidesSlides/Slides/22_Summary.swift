@@ -28,7 +28,7 @@ struct Summary: View {
     その結果、今回僕はモデルに xxx を、フィルターに yyy を選びました。
     """
 
-  var transition: AnyTransition = AnyTransition(AwesomeTransition())
+  var transition: AnyTransition = AnyTransition.awesome
 }
 
 #Preview {

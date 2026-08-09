@@ -23,7 +23,7 @@ struct ModelComparison: View {
     どう違うのか、シミュレーターを作って比較してみます。
     """
 
-  var transition: AnyTransition = AnyTransition(AwesomeTransition())
+  var transition: AnyTransition = AnyTransition.awesome
 }
 
 #Preview {

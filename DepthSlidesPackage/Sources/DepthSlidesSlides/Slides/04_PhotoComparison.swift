@@ -81,7 +81,7 @@ struct PhotoComparison: View {
     }
   }
 
-  var transition: AnyTransition = AnyTransition(AwesomeTransition())
+  var transition: AnyTransition = AnyTransition.awesome
 }
 
 #Preview(".initial") {

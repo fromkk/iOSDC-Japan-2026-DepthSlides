@@ -49,7 +49,7 @@ struct SensorSize: View {
     そして大きいほど被写界深度が浅くなる、つまりボケやすくなります。
     """
 
-  var transition: AnyTransition = AnyTransition(AwesomeTransition())
+  var transition: AnyTransition = AnyTransition.awesome
 }
 
 #Preview {

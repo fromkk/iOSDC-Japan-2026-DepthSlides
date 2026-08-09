@@ -64,7 +64,7 @@ struct SaitamaSwiftPR: View {
     以上です。ご清聴ありがとうございました。
     """
 
-  var transition: AnyTransition = AnyTransition(AwesomeTransition())
+  var transition: AnyTransition = AnyTransition.awesome
 }
 
 #Preview("initial") {

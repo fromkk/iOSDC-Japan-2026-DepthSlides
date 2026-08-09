@@ -25,7 +25,7 @@ struct BokehFilterSimulator: View {
     CIMaskedVariableBlur だけは深度マップをそのままボケの強さとして使えますが、それ以外は画像全体に一様なボケをかけてから深度マップで合成しているので、境目の出方や自然さがフィルターによって変わってきます。
     """
 
-  var transition: AnyTransition = AnyTransition(AwesomeTransition())
+  var transition: AnyTransition = AnyTransition.awesome
 }
 
 #Preview {

@@ -27,7 +27,7 @@ struct BokehImprovementApproaches: View {
     3つ目は、様々なボケを試して最適なものを選ぶ、というものです。
     """
 
-  var transition: AnyTransition = AnyTransition(AwesomeTransition())
+  var transition: AnyTransition = AnyTransition.awesome
 }
 
 #Preview {

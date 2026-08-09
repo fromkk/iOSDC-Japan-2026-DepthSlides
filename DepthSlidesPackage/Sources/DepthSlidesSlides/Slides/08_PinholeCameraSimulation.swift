@@ -25,7 +25,7 @@ struct PinholeCameraSimulation: View {
     そのため上下・左右逆さまに投影されるということです。
     """
 
-  var transition: AnyTransition = AnyTransition(AwesomeTransition())
+  var transition: AnyTransition = AnyTransition.awesome
 }
 
 #Preview {

@@ -21,7 +21,7 @@ struct HowCameraWorks: View {
     レンズがあって、センサーがあって、それを記録する、と言ってしまえばそれまでなんですが、ここではもう少しだけ踏み込んでみようと思います。
     """
 
-  var transition: AnyTransition = AnyTransition(AwesomeTransition())
+  var transition: AnyTransition = AnyTransition.awesome
 }
 
 #Preview {

@@ -26,7 +26,7 @@ struct DepthModelSimulator: View {
     仕切り線をドラッグすると元画像と深度画像を見比べられ、ピンチ操作やボタンで拡大して細部も確認できます。
     """
 
-  var transition: AnyTransition = AnyTransition(AwesomeTransition())
+  var transition: AnyTransition = AnyTransition.awesome
 }
 
 #Preview {

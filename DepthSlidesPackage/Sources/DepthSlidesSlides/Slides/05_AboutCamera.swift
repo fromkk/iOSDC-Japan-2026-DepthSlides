@@ -58,7 +58,7 @@ struct AboutCamera: View {
     }
   }
 
-  var transition: AnyTransition = AnyTransition(AwesomeTransition())
+  var transition: AnyTransition = AnyTransition.awesome
 
   var script: String {
     switch phase {

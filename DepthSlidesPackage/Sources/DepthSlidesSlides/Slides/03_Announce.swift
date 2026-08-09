@@ -63,7 +63,7 @@ struct AnnounceSlide: View {
 
   var script: String = ""
 
-  var transition: AnyTransition = AnyTransition(AwesomeTransition())
+  var transition: AnyTransition = AnyTransition.awesome
 }
 
 #Preview {

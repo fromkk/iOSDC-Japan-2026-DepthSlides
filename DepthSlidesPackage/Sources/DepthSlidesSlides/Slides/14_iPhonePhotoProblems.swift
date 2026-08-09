@@ -34,7 +34,7 @@ struct IPhonePhotoProblems: View {
     こだわりたい人は RAW 設定で撮影するのがおすすめですが、今回はここは深くは話しません。
     """
 
-  var transition: AnyTransition = AnyTransition(AwesomeTransition())
+  var transition: AnyTransition = AnyTransition.awesome
 }
 
 #Preview {

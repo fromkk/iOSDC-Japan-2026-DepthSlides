@@ -28,7 +28,7 @@ struct ModelUsageNotes: View {
     さらに Depth Pro は Mac 並の性能、特にメモリーが必要です。
     """
 
-  var transition: AnyTransition = AnyTransition(AwesomeTransition())
+  var transition: AnyTransition = AnyTransition.awesome
 }
 
 #Preview {

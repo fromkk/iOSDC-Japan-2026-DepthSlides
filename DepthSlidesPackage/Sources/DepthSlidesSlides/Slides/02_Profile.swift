@@ -34,7 +34,7 @@ struct ProfileSlide: View {
     カメラで写真を撮るのが好きです。
     """
 
-  var transition: AnyTransition = AnyTransition(AwesomeTransition())
+  var transition: AnyTransition = AnyTransition.awesome
 }
 
 #Preview {

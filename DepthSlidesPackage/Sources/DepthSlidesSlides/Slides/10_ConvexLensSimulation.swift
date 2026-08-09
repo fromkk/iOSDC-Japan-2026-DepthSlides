@@ -25,7 +25,7 @@ struct ConvexLensSimulation: View {
     先ほど虫眼鏡と言いましたが、虫眼鏡で太陽の光を当てて紙を燃やす実験をしたことがあるかもしれませんが、まさにその光が集まる点が焦点です。
     """
 
-  var transition: AnyTransition = AnyTransition(AwesomeTransition())
+  var transition: AnyTransition = AnyTransition.awesome
 }
 
 #Preview {

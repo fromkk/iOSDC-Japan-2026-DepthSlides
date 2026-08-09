@@ -31,7 +31,7 @@ struct CameraObscuraProblem: View {
     これにより明るい映像を獲得することができましたが、ピントを合わせる必要が出てきました。
     """
 
-  var transition: AnyTransition = AnyTransition(AwesomeTransition())
+  var transition: AnyTransition = AnyTransition.awesome
 }
 
 #Preview {

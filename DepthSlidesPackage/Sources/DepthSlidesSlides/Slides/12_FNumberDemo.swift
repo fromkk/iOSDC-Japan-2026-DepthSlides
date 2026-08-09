@@ -25,7 +25,7 @@ struct FNumberDemo: View {
     逆にf値を大きくして絞りを閉じると、帯が広がって被写界深度が深くなり、遠くまでピントが合うようになります。
     """
 
-  var transition: AnyTransition = AnyTransition(AwesomeTransition())
+  var transition: AnyTransition = AnyTransition.awesome
 }
 
 #Preview {
