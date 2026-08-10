@@ -12,7 +12,7 @@ import UniformTypeIdentifiers
 /// ズーム・キャッシュ）をまとめて持つ。
 struct DepthModelCompareView: View {
   private enum DisplayMode: String, CaseIterable, Identifiable {
-    case compare, blur, code
+    case compare, blur, conversionCode, code
 
     var id: String { rawValue }
 
@@ -20,6 +20,7 @@ struct DepthModelCompareView: View {
       switch self {
       case .compare: "深度比較"
       case .blur: "ボケ適用"
+      case .conversionCode: "モデル変換コード"
       case .code: "コード"
       }
     }
@@ -184,6 +185,10 @@ struct DepthModelCompareView: View {
         .padding(8)
       } else {
         statusText
+      }
+    case .conversionCode:
+      ScrollView {
+        converter.convertPage(selectedModel.conversionMarkdown)
       }
     case .code:
       ScrollView {

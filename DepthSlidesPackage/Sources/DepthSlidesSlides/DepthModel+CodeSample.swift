@@ -19,6 +19,106 @@ extension DepthModel {
     }
   }
 
+  /// コード表示モードで推定コードの左横に見せる、モデルの入手・Core ML 変換の
+  /// Markdown。`scripts/` 配下の変換スクリプトを簡略化したもので、こちらも
+  /// 嘘は書かないようにしている。変換が不要なモデル（写真埋め込みの深度・
+  /// 変換済みパッケージが配布されているもの）では、コードの代わりに
+  /// 入手方法やその旨を説明する。
+  ///
+  /// `estimationCodeSample` と違い、`depthAnythingV2Small` と `midasSmall` は
+  /// 入手経路がまったく異なる（Apple 公式配布 vs ONNX からの自前変換）ため、
+  /// それぞれ別の内容を表示する。
+  var conversionMarkdown: String {
+    switch self {
+    case .embeddedDepth:
+      """
+      ### モデル変換（不要）
+
+      Core ML モデルを使わず、写真（HEIC）に埋め込まれた
+      AVDepthData を読み取るだけなので、モデルの入手・変換は不要。
+      """
+    case .depthAnythingV2Small:
+      """
+      ### モデル入手（Apple 公式の変換済みを利用）
+
+      ```python
+      # Apple が変換済みの Core ML パッケージを公式配布しているため
+      # 変換は不要。ダウンロードしてそのまま利用する
+      from huggingface_hub import snapshot_download
+
+      snapshot_download(
+          repo_id="apple/coreml-depth-anything-v2-small",
+          allow_patterns=["DepthAnythingV2SmallF16.mlpackage/*"],
+      )
+      ```
+      """
+    case .midasSmall:
+      """
+      ### モデル変換（ONNX → Core ML）
+
+      ```python
+      # coremltools 8+ は ONNX を直接読めないため、onnx2torch で
+      # 一度 PyTorch モデルに変換してから trace して渡す
+      onnx_model = onnx.load("model-small.onnx")
+      torch_model = onnx2torch.convert(onnx_model).eval()
+      traced = torch.jit.trace(torch_model, torch.zeros(1, 3, 256, 256))
+
+      mlmodel = ct.convert(
+          traced,
+          inputs=[ct.ImageType(
+              name=input_name,         # ONNX グラフから検出した入出力名
+              shape=(1, 3, 256, 256),
+              scale=scale, bias=bias,  # ImageNet 正規化を入力側に織り込む
+              color_layout=ct.colorlayout.RGB,
+          )],
+          outputs=[ct.TensorType(name=output_name)],
+          convert_to="mlprogram",
+          compute_precision=ct.precision.FLOAT16,
+      )
+      mlmodel.save("MiDaSSmall.mlpackage")
+      ```
+      """
+    case .depthPro:
+      """
+      ### モデル入手（コミュニティ変換済みを利用）
+
+      ```python
+      # Apple 自身は Core ML 形式を配布していないが、Hugging Face の
+      # coreml-projects に変換済みパッケージ（約1.9GB）が公開されている。
+      # ViT + パッチフュージョンの複雑な構成をゼロから再変換するのは
+      # リスクが高いため、これをダウンロードして利用する
+      from huggingface_hub import snapshot_download
+
+      snapshot_download(
+          repo_id="coreml-projects/DepthPro-coreml",
+          allow_patterns=["DepthPro.mlpackage/*"],
+      )
+      ```
+      """
+    case .depthAnythingV3Small:
+      """
+      ### モデル変換（PyTorch → Core ML）
+
+      ```python
+      # DA3 の生出力 dict から depth テンソルだけを返す
+      # 薄いラッパーを trace して coremltools に渡す
+      wrapper = DepthOnlyWrapper(da3.model, depth_key).eval()
+      traced = torch.jit.trace(wrapper, (imgs,), strict=False)
+
+      mlmodel = ct.convert(
+          traced,
+          inputs=[ct.TensorType(name="image", shape=imgs.shape)],
+          outputs=[ct.TensorType(name="depth")],
+          convert_to="mlprogram",
+          compute_precision=ct.precision.FLOAT16,
+          minimum_deployment_target=ct.target.iOS17,
+      )
+      mlmodel.save("DepthAnythingV3Small.mlpackage")
+      ```
+      """
+    }
+  }
+
   var estimationCodeSample: String {
     switch self {
     case .embeddedDepth:
