@@ -2,6 +2,7 @@ import CoreGraphics
 import CoreImage
 import CoreML
 import Foundation
+import os
 
 enum DepthEstimationError: Error {
   case modelNotBundled(DepthModel)
@@ -10,12 +11,47 @@ enum DepthEstimationError: Error {
   case imageRenderFailed
 }
 
+/// 推論リクエストが今どの段階にあるか。特に Depth Pro (約1.8GB) は初回の
+/// モデルコンパイル・デバイス特化に数十秒〜数分かかり、無言だと「止まっている」
+/// ように見えるため、呼び出し側が段階に応じたステータス表示を出せるようにする。
+enum DepthEstimationPhase: Sendable {
+  /// `.mlpackage` → `.mlmodelc` へのコンパイル中（永続キャッシュがない初回のみ）。
+  case compilingModel
+  /// コンパイル済みモデルのロード中。この中で OS が GPU/Neural Engine 向けの
+  /// 特化コンパイルを行うため、端末での初回は数分かかることがある
+  /// （結果は OS がディスクにキャッシュするため2回目以降は速い）。
+  case loadingModel
+  /// 実際の推論（`MLModel.prediction`）を実行中。
+  case inferring
+}
+
+typealias DepthEstimationPhaseHandler = @MainActor @Sendable (DepthEstimationPhase) -> Void
+
 /// `DepthEstimator.estimateCached(cgImage:model:cacheKey:)` のキャッシュキー。
 /// 同じ画像データ・同じモデルであれば同一キーになり、2回目以降は推論を
 /// 実行せずキャッシュ済みの結果をそのまま返す。
 struct DepthCacheKey: Hashable {
   let imageData: Data
   let model: DepthModel
+}
+
+/// 深度マップキャッシュの本体。actor 隔離の外（ロック保護）に置くことで、
+/// actor が別モデルの推論（同期実行の `MLModel.prediction`）で塞がっている間も、
+/// キャッシュヒットの読み出しだけは actor のキューに並ばず即座に返せるようにする。
+/// これを actor 内の状態にすると、プリフェッチ中に推論済みモデルへ切り替えた際、
+/// 実行中の推論が終わるまでキャッシュの辞書引きすらできず「再推論しているように
+/// 見える」問題が起きる。
+private final class DepthImageCacheStorage: @unchecked Sendable {
+  private let lock = NSLock()
+  private var storage: [DepthCacheKey: CGImage] = [:]
+
+  func image(for key: DepthCacheKey) -> CGImage? {
+    lock.withLock { storage[key] }
+  }
+
+  func store(_ image: CGImage, for key: DepthCacheKey) {
+    lock.withLock { storage[key] = image }
+  }
 }
 
 /// Core ML の深度推定モデルを読み込み・実行して、深度マップを `CGImage` として
@@ -34,30 +70,67 @@ actor DepthEstimator {
   static let shared = DepthEstimator()
 
   private var compiledModels: [DepthModel: MLModel] = [:]
-  private var depthImageCache: [DepthCacheKey: CGImage] = [:]
+
+  /// モデルごとの実行中コンパイル処理。起動時ウォームアップと推論経路の
+  /// `loadModel` が同じモデルを同時に要求しても、1つのコンパイルを共有して
+  /// 二重に走らせないための台帳。
+  private var compileTasks: [DepthModel: Task<URL, any Error>] = [:]
+  private var didWarmUp = false
+
+  private let depthImageCache = DepthImageCacheStorage()
   private let context = CIContext()
+  private let clock = ContinuousClock()
+  private let logger = Logger(
+    subsystem: Bundle.main.bundleIdentifier ?? "DepthSlides", category: "DepthEstimator")
 
   func estimate(cgImage: CGImage, model: DepthModel) async throws -> CGImage {
-    try await runInference(cgImage: cgImage, model: model)
+    try await runInference(cgImage: cgImage, model: model, onPhase: nil)
+  }
+
+  /// キャッシュ済みの深度マップを actor のキューに並ばずに同期的に取り出す。
+  /// 呼び出し側は「推論中...」表示や `estimateCached` の await に入る前に
+  /// まずこちらを引くことで、プリフェッチ中の別モデルの推論に待たされずに
+  /// キャッシュ済みの結果を即表示できる。
+  nonisolated func cachedDepthImage(for cacheKey: DepthCacheKey) -> CGImage? {
+    depthImageCache.image(for: cacheKey)
+  }
+
+  /// Core ML 推論以外の経路（`EmbeddedDepthExtractor` による写真内蔵深度の抽出）の
+  /// 結果も同じキャッシュに載せるための書き込み口。
+  nonisolated func storeDepthImage(_ image: CGImage, for cacheKey: DepthCacheKey) {
+    depthImageCache.store(image, for: cacheKey)
   }
 
   /// `estimate(cgImage:model:)` と同じ推論を行うが、`cacheKey` に対する結果を
   /// キャッシュし、同じ画像・同じモデルの組み合わせであれば2回目以降は
   /// 推論をスキップして即座に返す。呼び出し側（`DepthModelCompareView`）が
   /// 画像データから `DepthCacheKey` を1回だけ組み立てて渡す想定。
-  func estimateCached(cgImage: CGImage, model: DepthModel, cacheKey: DepthCacheKey) async throws
-    -> CGImage
-  {
-    if let cached = depthImageCache[cacheKey] {
+  /// `onPhase` を渡すと、コンパイル・ロード・推論のフェーズ切り替わりを
+  /// MainActor 上で受け取れる（ステータス表示用）。
+  func estimateCached(
+    cgImage: CGImage, model: DepthModel, cacheKey: DepthCacheKey,
+    onPhase: DepthEstimationPhaseHandler? = nil
+  ) async throws -> CGImage {
+    if let cached = depthImageCache.image(for: cacheKey) {
       return cached
     }
-    let result = try await runInference(cgImage: cgImage, model: model)
-    depthImageCache[cacheKey] = result
+    let result = try await runInference(cgImage: cgImage, model: model, onPhase: onPhase)
+    depthImageCache.store(result, for: cacheKey)
     return result
   }
 
-  private func runInference(cgImage: CGImage, model: DepthModel) async throws -> CGImage {
-    let mlModel = try await loadModel(model)
+  private func runInference(
+    cgImage: CGImage, model: DepthModel, onPhase: DepthEstimationPhaseHandler?
+  ) async throws -> CGImage {
+    // 実行中の `prediction` は同期実行のため中断できないが、actor のキューで
+    // 順番待ちしている呼び出しは、呼び出し元の Task がキャンセル済みなら
+    // ここで打ち切って重い推論を開始させない（画面から離れた場合など）。
+    try Task.checkCancellation()
+    let mlModel = try await loadModel(model, onPhase: onPhase)
+    try Task.checkCancellation()
+    await onPhase?(.inferring)
+    let start = clock.now
+    let result: CGImage
     switch model {
     case .embeddedDepth:
       // embeddedDepth は Core ML 推論ではなく `EmbeddedDepthExtractor` が
@@ -68,27 +141,175 @@ actor DepthEstimator {
       // 保証するために残している。
       throw DepthEstimationError.modelNotBundled(model)
     case .depthPro:
-      return try runDepthPro(cgImage: cgImage, model: mlModel)
+      result = try runDepthPro(cgImage: cgImage, model: mlModel)
     case .depthAnythingV3Small:
-      return try runDepthAnythingV3(cgImage: cgImage, model: mlModel)
+      result = try runDepthAnythingV3(cgImage: cgImage, model: mlModel)
     case .depthAnythingV2Small, .midasSmall:
-      return try runGenericImageModel(cgImage: cgImage, model: mlModel)
+      result = try runGenericImageModel(cgImage: cgImage, model: mlModel)
+    }
+    logger.info("\(model.rawValue): 推論 \(Self.formatted(self.clock.now - start))")
+    return result
+  }
+
+  /// 端末で利用可能な全 Core ML モデルについて、コンパイル済みの永続キャッシュが
+  /// なければコンパイルして永続化する。アプリ起動時に一度だけ呼ぶ想定
+  /// （2回目以降の呼び出しは何もしない）。直列で進め、最重量の depthPro は
+  /// 最後に回す。永続化済みのモデルは指紋チェックだけで即スキップされる。
+  /// 途中でユーザーが同じモデルの推論を要求した場合は `compileTasks` 経由で
+  /// 実行中のコンパイルに相乗りするため、二重コンパイルにはならない。
+  func warmUpAllCompiledModels() async {
+    guard !didWarmUp else { return }
+    didWarmUp = true
+
+    var targets = DepthModel.availableCases.filter { $0.packageURL != nil }
+    if let index = targets.firstIndex(of: .depthPro) {
+      targets.append(targets.remove(at: index))
+    }
+    for model in targets {
+      guard let packageURL = model.packageURL, let resourceName = model.resourceName else {
+        continue
+      }
+      do {
+        _ = try await compiledModelURL(
+          for: model, packageURL: packageURL, resourceName: resourceName, onPhase: nil)
+      } catch {
+        // モデル未変換などで1つ失敗しても、残りのウォームアップは続行する。
+        logger.error("\(model.rawValue): 起動時コンパイルに失敗 \(error)")
+      }
     }
   }
 
-  private func loadModel(_ model: DepthModel) async throws -> MLModel {
+  /// コンパイル済み .mlmodelc の URL を返す。優先順は
+  /// 永続キャッシュ → 実行中のコンパイルへの相乗り → 新規コンパイル+永続化。
+  ///
+  /// `MLModel.compileModel` の結果は一時ディレクトリに置かれるため、そのままだと
+  /// アプリ起動のたびに約1.8GB (Depth Pro) のコンパイルをやり直すことになる。
+  /// Application Support に永続化し、同梱の .mlpackage が変わっていなければ再利用する。
+  private func compiledModelURL(
+    for model: DepthModel, packageURL: URL, resourceName: String,
+    onPhase: DepthEstimationPhaseHandler?
+  ) async throws -> URL {
+    let fingerprint = Self.sourceFingerprint(of: packageURL)
+    if let persisted = Self.persistedCompiledModelURL(
+      resourceName: resourceName, fingerprint: fingerprint)
+    {
+      logger.info("\(model.rawValue): 永続化済みのコンパイル結果を再利用")
+      return persisted
+    }
+
+    await onPhase?(.compilingModel)
+    if let inFlight = compileTasks[model] {
+      return try await inFlight.value
+    }
+
+    let task = Task<URL, any Error> {
+      let compileStart = clock.now
+      let tempCompiledURL = try await MLModel.compileModel(at: packageURL)
+      let compiledURL: URL
+      do {
+        compiledURL = try Self.persistCompiledModel(
+          at: tempCompiledURL, resourceName: resourceName, fingerprint: fingerprint)
+      } catch {
+        // 永続化に失敗しても、一時ディレクトリのコンパイル結果でロードは続行できる
+        // （次回起動時にまたコンパイルし直しになるだけ）。
+        logger.error("\(model.rawValue): コンパイル結果の永続化に失敗 \(error)")
+        compiledURL = tempCompiledURL
+      }
+      logger.info("\(model.rawValue): コンパイル \(Self.formatted(self.clock.now - compileStart))")
+      return compiledURL
+    }
+    compileTasks[model] = task
+    defer { compileTasks[model] = nil }
+    return try await task.value
+  }
+
+  private func loadModel(_ model: DepthModel, onPhase: DepthEstimationPhaseHandler?) async throws
+    -> MLModel
+  {
     if let cached = compiledModels[model] {
       return cached
     }
-    guard let packageURL = model.packageURL else {
+    guard let packageURL = model.packageURL, let resourceName = model.resourceName else {
       throw DepthEstimationError.modelNotBundled(model)
     }
+
+    let compiledURL = try await compiledModelURL(
+      for: model, packageURL: packageURL, resourceName: resourceName, onPhase: onPhase)
+
+    try Task.checkCancellation()
+    await onPhase?(.loadingModel)
     let configuration = MLModelConfiguration()
     configuration.computeUnits = .all
-    let compiledURL = try await MLModel.compileModel(at: packageURL)
+    let loadStart = clock.now
     let mlModel = try MLModel(contentsOf: compiledURL, configuration: configuration)
+    logger.info("\(model.rawValue): ロード \(Self.formatted(self.clock.now - loadStart))")
     compiledModels[model] = mlModel
     return mlModel
+  }
+
+  // MARK: - コンパイル済みモデルの永続化
+
+  /// `Application Support/CompiledDepthModels/` ディレクトリ。
+  private static func compiledModelsDirectory() throws -> URL {
+    let base = try FileManager.default.url(
+      for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
+    let directory = base.appendingPathComponent("CompiledDepthModels", isDirectory: true)
+    try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+    return directory
+  }
+
+  /// 同梱 .mlpackage の「指紋」。scripts/ でモデルを変換し直したら永続キャッシュを
+  /// 無効化できるよう、パッケージ内の全ファイル数と合計バイト数を使う
+  /// （更新日時はビルド時のリソースコピーで変わりうるため使わない）。
+  private static func sourceFingerprint(of packageURL: URL) -> String {
+    var totalSize: UInt64 = 0
+    var fileCount = 0
+    if let enumerator = FileManager.default.enumerator(
+      at: packageURL, includingPropertiesForKeys: [.fileSizeKey])
+    {
+      for case let url as URL in enumerator {
+        if let size = try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize {
+          totalSize += UInt64(size)
+          fileCount += 1
+        }
+      }
+    }
+    return "\(fileCount)-\(totalSize)"
+  }
+
+  /// 永続化済みの .mlmodelc があり、かつ変換元の .mlpackage が変わっていなければ
+  /// その URL を返す。
+  private static func persistedCompiledModelURL(resourceName: String, fingerprint: String) -> URL? {
+    guard let directory = try? compiledModelsDirectory() else { return nil }
+    let modelURL = directory.appendingPathComponent(resourceName + ".mlmodelc")
+    let stampURL = directory.appendingPathComponent(resourceName + ".fingerprint")
+    guard FileManager.default.fileExists(atPath: modelURL.path),
+      let stored = try? String(contentsOf: stampURL, encoding: .utf8),
+      stored == fingerprint
+    else { return nil }
+    return modelURL
+  }
+
+  /// 一時ディレクトリのコンパイル結果を Application Support へ移動し、変換元の
+  /// 指紋を書き込んで次回起動から再利用できるようにする。
+  private static func persistCompiledModel(
+    at tempURL: URL, resourceName: String, fingerprint: String
+  ) throws -> URL {
+    let directory = try compiledModelsDirectory()
+    let modelURL = directory.appendingPathComponent(resourceName + ".mlmodelc")
+    let stampURL = directory.appendingPathComponent(resourceName + ".fingerprint")
+    if FileManager.default.fileExists(atPath: modelURL.path) {
+      try FileManager.default.removeItem(at: modelURL)
+    }
+    try FileManager.default.moveItem(at: tempURL, to: modelURL)
+    try fingerprint.write(to: stampURL, atomically: true, encoding: .utf8)
+    return modelURL
+  }
+
+  private static func formatted(_ duration: Duration) -> String {
+    let seconds =
+      Double(duration.components.seconds) + Double(duration.components.attoseconds) / 1e18
+    return String(format: "%.2fs", seconds)
   }
 
   // MARK: - Depth Anything V2 Small / MiDaS Small (単一 ImageType 入力・単一出力)
@@ -373,6 +594,13 @@ actor DepthEstimator {
     }
     return CIImage(cgImage: cgImage)
   }
+}
+
+/// アプリ起動時に呼ぶ想定の公開エントリポイント。端末で利用可能な全モデルのうち、
+/// コンパイル済み永続キャッシュがないものを裏で直列にコンパイル・永続化しておく
+/// （`DepthEstimator` 自体はモジュール内部のため、関数として公開する）。
+public func warmUpDepthModelCompilation() async {
+  await DepthEstimator.shared.warmUpAllCompiledModels()
 }
 
 extension CIImage {

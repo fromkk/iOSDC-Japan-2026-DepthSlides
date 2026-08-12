@@ -17,6 +17,9 @@ struct DepthSlidesApp: App {
     )
     .task {
       Self.syncCoordinator.start(attachingTo: Self.configuration.slideIndexController)
+      // モデル比較スライドを開く前に、未永続化のモデルのコンパイルを裏で
+      // 済ませておく（永続化済みならすぐ抜ける）。
+      await warmUpDepthModelCompilation()
     }
     .environment(\.presentationSyncCoordinator, Self.syncCoordinator)
   }

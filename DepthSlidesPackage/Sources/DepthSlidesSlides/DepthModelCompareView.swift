@@ -46,6 +46,19 @@ struct DepthModelCompareView: View {
   @State private var revealFraction: CGFloat = 0.5
   @State private var blurZoomState = ImageZoomState.identity
 
+  /// 新しい写真を選んだときに、選択中以外のモデルの推論を裏で直列に進めておくタスク。
+  /// 次の写真が選ばれたら古いプリフェッチはキャンセルして置き換える。
+  @State private var prefetchTask: Task<Void, Never>?
+
+  /// 選択中モデルの推論（`runEstimation`）を実行中のタスク。モデルを切り替えたり
+  /// 画面から離れたりしたときに、actor のキューで順番待ちしている古い推論を
+  /// キャンセルして無駄に走らせないために保持する。
+  @State private var estimationTask: Task<Void, Never>?
+
+  /// 現在の写真に対して推論結果がまだ用意できていないモデルの集合。
+  /// モデル選択のセグメント名の横にインジケーターを表示するのに使う。
+  @State private var inferringModels: Set<DepthModel> = []
+
   private let context = CIContext()
   private let converter = MarkdownToSlideConverter()
 
@@ -91,7 +104,13 @@ struct DepthModelCompareView: View {
 
       Picker("モデル", selection: $selectedModel) {
         ForEach(DepthModel.availableCases) { model in
-          Text(model.displayName).tag(model)
+          // セグメント内では任意のViewはもちろん、Text に補間した SF Symbol も
+          // 描画されない（検証済み）ため、Unicode 文字でインジケーターを表現する。
+          if inferringModels.contains(model) {
+            Text("\(model.displayName) ⏳").tag(model)
+          } else {
+            Text(model.displayName).tag(model)
+          }
         }
       }
       .pickerStyle(.segmented)
@@ -120,7 +139,17 @@ struct DepthModelCompareView: View {
       Task { await loadFromPhotosPicker(newItem) }
     }
     .onChange(of: selectedModel) { _, _ in
-      Task { await runEstimation() }
+      estimationTask?.cancel()
+      estimationTask = Task { await runEstimation() }
+    }
+    .onDisappear {
+      // スライドから離れたら、順番待ちの推論（特に最重量の depthPro）を
+      // 開始させない。すでに実行中の1件の `MLModel.prediction` は同期実行の
+      // ため中断できず、それだけは完走する。
+      prefetchTask?.cancel()
+      prefetchTask = nil
+      estimationTask?.cancel()
+      estimationTask = nil
     }
     #if os(iOS)
       .fullScreenCover(isPresented: $isPeerCaptureCameraPresented) {
@@ -253,6 +282,11 @@ struct DepthModelCompareView: View {
   /// 新しい画像が選ばれたタイミングでのみズーム・比較スライダーの位置をリセットする
   /// （モデルを切り替えたときは `onChange(of: selectedModel)` 側でリセットしないため保持される）。
   private func loadImage(from data: Data) async {
+    prefetchTask?.cancel()
+    prefetchTask = nil
+    estimationTask?.cancel()
+    estimationTask = nil
+
     depthCGImage = nil
     blurredCGImage = nil
     statusMessage = "読み込み中..."
@@ -273,7 +307,25 @@ struct DepthModelCompareView: View {
     blurZoomState = .identity
     focusPoint = nil
 
-    await runEstimation()
+    // 今回の写真で推論対象となる全モデル（選択中モデル + プリフェッチ対象）を
+    // 「未完了」として登録する。完了するたびに各処理側で取り除く。
+    var pending = Set(
+      DepthModel.availableCases.filter { $0 != .embeddedDepth && $0.packageURL != nil })
+    pending.insert(selectedModel)
+    inferringModels = pending
+
+    // 画面から離れたときにキャンセルできるよう `estimationTask` として保持しつつ、
+    // プリフェッチより先に選択中モデルの推論が終わるのを待つ。
+    let task = Task { await runEstimation() }
+    estimationTask = task
+    await task.value
+
+    // 選択中モデルの推論が終わってから残りのモデルを裏で直列にプリフェッチする
+    // （actor のキュー順で選択中モデルが必ず先に処理されるようにするため）。
+    let selected = selectedModel
+    prefetchTask = Task {
+      await prefetchRemainingModels(imageData: data, cgImage: oriented, excluding: selected)
+    }
   }
 
   private func orientedCGImage(_ cgImage: CGImage, orientation: CGImagePropertyOrientation?)
@@ -292,41 +344,127 @@ struct DepthModelCompareView: View {
     depthCGImage = nil
     blurredCGImage = nil
 
-    if selectedModel == .embeddedDepth {
+    // await 中にモデルや写真が切り替わった場合、古い結果で表示を上書きしない
+    // ようにするためのスナップショット。
+    let model = selectedModel
+    let cacheKey = DepthCacheKey(imageData: imageData, model: model)
+
+    // キャッシュ済みなら actor（推論キュー）を経由せず同期的に取り出して即表示する。
+    // `estimateCached` の中にもキャッシュ判定はあるが、actor がプリフェッチ中の
+    // 別モデルの推論で塞がっているとその判定まで待たされてしまうため、
+    // ここで先に引くことに意味がある。
+    if let cached = DepthEstimator.shared.cachedDepthImage(for: cacheKey) {
+      finishInferring(model, for: imageData)
+      depthCGImage = cached
+      await recomputeBlur()
+      return
+    }
+
+    if model == .embeddedDepth {
       statusMessage = "写真に含まれる深度情報を抽出中..."
       do {
         let result = try await Task.detached(priority: .userInitiated) {
           try EmbeddedDepthExtractor.extractDepthImage(from: imageData)
         }.value
+        DepthEstimator.shared.storeDepthImage(result, for: cacheKey)
+        finishInferring(model, for: imageData)
+        guard model == selectedModel, imageData == self.imageData else { return }
         depthCGImage = result
         await recomputeBlur()
       } catch EmbeddedDepthExtractor.ExtractionError.noEmbeddedDepthData {
+        finishInferring(model, for: imageData)
+        guard model == selectedModel, imageData == self.imageData else { return }
         statusMessage = "この写真には深度情報が含まれていません（Portraitモードで撮影した写真をお試しください）"
       } catch {
+        finishInferring(model, for: imageData)
+        guard model == selectedModel, imageData == self.imageData else { return }
         statusMessage = "深度情報の抽出に失敗しました: \(error)"
       }
       return
     }
 
-    guard selectedModel.packageURL != nil else {
+    guard model.packageURL != nil else {
+      finishInferring(model, for: imageData)
       statusMessage =
-        "\(selectedModel.displayName) のモデルが見つかりません。scripts/ 以下のスクリプトを実行してください"
+        "\(model.displayName) のモデルが見つかりません。scripts/ 以下のスクリプトを実行してください"
       return
     }
 
-    statusMessage = "\(selectedModel.displayName) で推論中..."
+    // actor がプリフェッチ中の別モデルの推論で塞がっている間は onPhase が
+    // 呼ばれないため、順番待ちの間はこの表示のままになる。
+    statusMessage = "\(model.displayName) の推論を準備中...（他のモデルの処理待ちの場合があります）"
 
-    let cacheKey = DepthCacheKey(imageData: imageData, model: selectedModel)
     do {
       let result = try await DepthEstimator.shared.estimateCached(
-        cgImage: originalCGImage, model: selectedModel, cacheKey: cacheKey)
+        cgImage: originalCGImage, model: model, cacheKey: cacheKey
+      ) { phase in
+        // await 中に別のモデル・写真へ切り替わっていたら、古いフェーズ表示で
+        // 上書きしない。
+        guard model == selectedModel, imageData == self.imageData else { return }
+        switch phase {
+        case .compilingModel:
+          statusMessage = "\(model.displayName) のモデルをコンパイル中...（初回のみ）"
+        case .loadingModel:
+          statusMessage = "\(model.displayName) のモデルを読み込み中...（この端末での初回は数分かかることがあります）"
+        case .inferring:
+          statusMessage = "\(model.displayName) で推論中..."
+        }
+      }
+      finishInferring(model, for: imageData)
+      guard model == selectedModel, imageData == self.imageData else { return }
       depthCGImage = result
 
       // ボケモードに切り替えたときに待ち時間なしで表示できるよう、深度が
       // 確定した時点で続けて計算しておく。
       await recomputeBlur()
+    } catch is CancellationError {
+      // 画面から離れた・モデルや写真を切り替えた等で不要になった推論。
+      // 表示はキャンセルした側が引き継ぐため、ここでは何もしない。
+      return
     } catch {
+      finishInferring(model, for: imageData)
+      guard model == selectedModel, imageData == self.imageData else { return }
       statusMessage = "推論に失敗しました: \(error)"
+    }
+  }
+
+  /// 対象の写真が今も表示中の場合のみ、モデルの推論完了を記録してインジケーターを消す。
+  /// await 中に別の写真へ切り替わっていた場合は、新しい写真の未完了状態を壊さない。
+  private func finishInferring(_ model: DepthModel, for imageData: Data) {
+    guard imageData == self.imageData else { return }
+    inferringModels.remove(model)
+  }
+
+  /// 選択中のモデル以外の各モデルの推論を裏で直列に進め、あとでモデルを
+  /// 切り替えたときにキャッシュヒットで即座に表示できるようにする。
+  /// `DepthEstimator` は actor で推論本体が同期実行のため、1つの Task 内で
+  /// 順番に await するだけで直列になる。選択中のモデルは `runEstimation()` が
+  /// 担当するため除外する。表示には `inferringModels` の更新以外では触れない。
+  private func prefetchRemainingModels(
+    imageData: Data, cgImage: CGImage, excluding selected: DepthModel
+  ) async {
+    // depthPro（macOS のみ・最重量）はプリフェッチ中のモデル切り替えを
+    // 待たせる時間が長くなるため最後に回す。
+    var targets = DepthModel.availableCases.filter {
+      $0 != .embeddedDepth && $0 != selected && $0.packageURL != nil
+    }
+    if let index = targets.firstIndex(of: .depthPro) {
+      targets.append(targets.remove(at: index))
+    }
+
+    for model in targets {
+      if Task.isCancelled { return }
+      do {
+        _ = try await DepthEstimator.shared.estimateCached(
+          cgImage: cgImage, model: model,
+          cacheKey: DepthCacheKey(imageData: imageData, model: model))
+      } catch {
+        // モデル未変換などで1つ失敗しても、残りのモデルのプリフェッチは続行する。
+      }
+      // キャンセルで打ち切られた場合は推論が完了していないので、
+      // 「完了した」印（インジケーターの消去）は付けない。
+      if Task.isCancelled { return }
+      finishInferring(model, for: imageData)
     }
   }
 
