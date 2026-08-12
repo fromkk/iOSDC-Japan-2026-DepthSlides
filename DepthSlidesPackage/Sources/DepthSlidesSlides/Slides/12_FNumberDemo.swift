@@ -8,7 +8,7 @@ struct FNumberDemo: View {
 
   var body: some View {
     VStack(alignment: .leading, spacing: 24) {
-      Text("f値デモ")
+      Text("被写界深度")
         .font(slideTheme.headingH1Font)
         .foregroundStyle(slideTheme.primaryTextColor)
 

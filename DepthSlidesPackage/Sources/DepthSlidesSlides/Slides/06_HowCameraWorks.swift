@@ -18,7 +18,6 @@ struct HowCameraWorks: View {
   var script: String = """
     そもそもカメラの仕組みについて振り返ってみようと思います。
     カメラってどうやってできているでしょうか？
-    レンズがあって、センサーがあって、それを記録する、と言ってしまえばそれまでなんですが、ここではもう少しだけ踏み込んでみようと思います。
     """
 
   var transition: AnyTransition = AnyTransition.awesome

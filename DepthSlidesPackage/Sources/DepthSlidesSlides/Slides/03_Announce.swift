@@ -6,6 +6,7 @@ import SwiftUI
 @Slide
 struct AnnounceSlide: View {
   @Environment(\.slideTheme) var slideTheme
+  @Environment(\.slideAudioEnabled) var slideAudioEnabled
   @State private var chimePlayer: ChimePlayer?
 
   enum SlidePhase: Int, PhasedState {
@@ -56,12 +57,19 @@ struct AnnounceSlide: View {
   }
 
   private func playChime(_ sequence: ChimeSequence) {
+    guard slideAudioEnabled else { return }
     let player = chimePlayer ?? ChimePlayer()
     chimePlayer = player
     player.play(sequence)
   }
 
-  var script: String = ""
+  var script: String {
+    if phase == .second {
+      return "発表の中で写真を撮影するタイミングがあります。せっかくなのでピースとかしてもらえると嬉しいです✌🏻"
+    } else {
+      return ""
+    }
+  }
 
   var transition: AnyTransition = AnyTransition.awesome
 }

@@ -51,6 +51,7 @@ struct DepthSlidesApp: App {
             .background(theme.backgroundColor)
         }
         .environment(\.presentationSyncCoordinator, Self.syncCoordinator)
+        .environment(\.slideAudioEnabled, false)
         .preferredColorScheme(.light)
       }
     #endif
