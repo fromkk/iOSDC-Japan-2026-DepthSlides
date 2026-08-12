@@ -28,13 +28,13 @@ struct PhotoComparison: View {
         VStack {
           HStack {
             VStack {
-              Image(.photoIphone)
+              Image(.IMG_2569)
                 .resizable()
                 .aspectRatio(contentMode: .fit)
             }
 
             VStack {
-              Image(.photoLeica)
+              Image(.SDIM_4295_2)
                 .resizable()
                 .aspectRatio(contentMode: .fit)
                 .overlay {
