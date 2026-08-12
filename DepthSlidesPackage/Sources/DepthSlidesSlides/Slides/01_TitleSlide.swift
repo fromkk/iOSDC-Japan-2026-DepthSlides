@@ -11,7 +11,7 @@ struct TitleSlide: View {
   var body: some View {
     HStack(alignment: .center) {
       VStack(alignment: .leading, spacing: 120) {
-        Text("複数の深度推定モデルを比較して、iPhoneで撮影した写真のボケをミラーレス級に近づける")
+        Text("複数の深度推定モデルを比較して、スマホで撮影した写真のボケをミラーレス級に近づける")
           .font(theme.headingH1Font)
           .oldLensLight(.title)
 
@@ -28,7 +28,7 @@ struct TitleSlide: View {
   }
 
   var script: String = """
-    複数の深度推定モデルを比較して、iPhoneで撮影した写真のボケをミラーレス級に近づける、というタイトルでお話しします。
+    複数の深度推定モデルを比較して、スマホで撮影した写真のボケをミラーレス級に近づける、というタイトルでお話しします。
     """
 
   var transition: AnyTransition = AnyTransition.awesome

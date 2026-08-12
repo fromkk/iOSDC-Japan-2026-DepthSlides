@@ -40,6 +40,7 @@ struct SaitamaSwiftPR: View {
             .frame(width: 200, height: 200)
         }
         Text("https://japan-region-swift.connpass.com/event/397259/")
+          .font(theme.bodyFont)
       }
       .padding(theme.contentPadding)
     case .third:
@@ -56,6 +57,7 @@ struct SaitamaSwiftPR: View {
             .frame(width: 200, height: 200)
         }
         Text("https://japan-region-swift.connpass.com/event/397260/")
+          .font(theme.bodyFont)
       }
       .padding(theme.contentPadding)
     }
