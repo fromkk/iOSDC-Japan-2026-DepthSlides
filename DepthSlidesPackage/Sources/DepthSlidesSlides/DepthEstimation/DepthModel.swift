@@ -9,10 +9,12 @@ enum DepthModel: String, CaseIterable, Identifiable, Hashable {
   /// などが記録する視差マップ）をそのまま使う。他の4ケースと違い Core ML
   /// モデルを持たないため `resourceName`/`packageURL` は nil になる。
   case embeddedDepth
-  case depthAnythingV2Small
-  case depthAnythingV3Small
-  case depthPro
+  /// ML モデルはリリースの古い順に並べる（スライド・シミュレーターの表示順に影響）:
+  /// MiDaS (2020) → Depth Anything V2 (2024/6) → Depth Pro (2024/10) → Depth Anything V3 (2025/11)
   case midasSmall
+  case depthAnythingV2Small
+  case depthPro
+  case depthAnythingV3Small
 
   var id: String { rawValue }
 

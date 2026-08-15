@@ -168,14 +168,30 @@ https://commons.wikimedia.org/wiki/File:1646_Athanasius_Kircher_-_Camera_obscura
 
 ### 配布されている ML モデルを利用して深度を推定する
 
-- Depth Anything V2
-- Depth Anything V3
+- MiDaS Small
+- Depth Anything V2 Small (F16)
 - Depth Pro
+- Depth Anything V3 (da3-small)
 
-(どう違うのかSimulatorを作って比較したい)
+（フェーズ1: モデル一覧）
 
-^ 次に、配布されている ML モデルを使った深度推定です。今回は Depth Anything V2、Depth Anything V3、Depth Pro の3つを試しました。
-^ どう違うのか、シミュレーターを作って比較してみます。
+^ 次に、配布されている ML モデルを使った深度推定です。今回は MiDaS Small、Depth Anything V2 Small、Depth Pro、Depth Anything V3 の4つを試しました。
+
+（フェーズ2: スペック比較表 — 公開時期・開発元・バックボーン・パラメータ数・モデルサイズ・入力解像度）
+
+^ まずスペックを比較してみます。リリースの古い順に並べると、そのまま深度推定の進化の歴史になっていて、2020年の CNN ベースの MiDaS から、ViT ベースになった Depth Anything V2、高解像・高精度に振った Apple の Depth Pro、そして複数視点にも対応した3D基盤モデルの Depth Anything V3 という流れです。
+^ 注目してほしいのはモデルサイズで、Depth Pro だけ 1.8GB と桁が2つ違います。他の3つは 32〜61MB に収まっているので、アプリに同梱することを考えると、この差はかなり効いてきます。
+
+（フェーズ3: 深度の種類 — 相対深度 vs 絶対深度）
+
+^ 出力される深度にも種類があります。MiDaS と Depth Anything は相対深度、つまりどこが手前でどこが奥か、という相対的な関係だけが分かります。ボケを作るだけならこれで十分です。
+^ 一方 Depth Pro は絶対深度、メートル単位の実距離を返してくれて、さらに焦点距離の推定もできます。本物のレンズの被写界深度計算を再現したい場合はこちらが有効です。
+
+（フェーズ4: ライセンス）
+
+^ そして見落としがちなのがライセンスです。Depth Anything V2 で Apache-2.0 なのは実は Small だけで、Base 以上は商用不可の CC-BY-NC です。Depth Pro も Apple の研究用ライセンスなので、商用アプリへの組み込みは不可と考えるのが安全です。
+^ 精度が良いモデルがそのままアプリに使えるとは限らない、というのは注意が必要なポイントです。
+^ では実際にどう違うのか、シミュレーターを作って比較してみます。
 
 ---
 
