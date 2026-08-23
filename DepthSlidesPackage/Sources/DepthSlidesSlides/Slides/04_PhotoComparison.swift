@@ -31,6 +31,10 @@ struct PhotoComparison: View {
               Image(.IMG_2569)
                 .resizable()
                 .aspectRatio(contentMode: .fit)
+
+              if phase == .forth {
+                Text("iPhone 17 Pro")
+              }
             }
 
             VStack {
@@ -42,6 +46,10 @@ struct PhotoComparison: View {
                     Color.black.opacity(0.5)
                   }
                 }
+
+              if phase == .forth {
+                Text("SIGMA fp / SIGMA 28–70mm F2.8 DG DN CONTEMPORARY")
+              }
             }
           }
 

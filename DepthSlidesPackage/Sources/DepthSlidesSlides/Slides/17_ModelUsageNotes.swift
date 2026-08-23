@@ -16,6 +16,7 @@ struct ModelUsageNotes: View {
           - Core AI は WWDC26 で発表された Core ML の後継フレームワーク（Xcode 27 / iOS 20 SDK）
         - モデルのサイズが大きい（アプリに同梱するのでアプリのサイズも大きくなる）
         - Depth Pro は Mac 並の性能（メモリー）が必要
+        - モデル自体やそれぞれのサイズによってライセンスが異なる
         """
       )
     }
@@ -26,6 +27,7 @@ struct ModelUsageNotes: View {
     まず、それぞれ Core ML や Core AI で利用するためにモデルの変換が必要です。Core AI は WWDC26 で発表された Core ML の後継フレームワークで、Xcode 27 / iOS 20 SDK から利用できます。
     また、モデルのサイズが大きいので、アプリに同梱するとアプリのサイズも大きくなってしまいます。
     さらに Depth Pro は Mac 並の性能、特にメモリーが必要です。
+    また、ライセンスもモデル自体や、モデルのサイズによって異なりますので、高性能で使いたくても使えないものもありますので注意が必要です。
     """
 
   var transition: AnyTransition = AnyTransition.awesome
