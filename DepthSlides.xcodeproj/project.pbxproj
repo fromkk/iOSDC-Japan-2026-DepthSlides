@@ -443,6 +443,9 @@
 				ENABLE_USER_SELECTED_FILES = readwrite;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = DepthSlides/Info.plist;
+				INFOPLIST_KEY_NSCameraUsageDescription = "登壇中にこのiPhoneのカメラで撮影しDepth情報付きの写真をMacに送信する用途に加え、外部UVCカメラやContinuity Cameraの映像をスライドに表示する用途にも使用します。";
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "同じネットワーク上のMac/iPhoneを見つけて、撮影した写真を送受信するために使用します。";
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "撮影した写真をあとで写真ライブラリから選び直せるように保存します。";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
@@ -491,6 +494,9 @@
 				ENABLE_USER_SELECTED_FILES = readwrite;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = DepthSlides/Info.plist;
+				INFOPLIST_KEY_NSCameraUsageDescription = "登壇中にこのiPhoneのカメラで撮影しDepth情報付きの写真をMacに送信する用途に加え、外部UVCカメラやContinuity Cameraの映像をスライドに表示する用途にも使用します。";
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "同じネットワーク上のMac/iPhoneを見つけて、撮影した写真を送受信するために使用します。";
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "撮影した写真をあとで写真ライブラリから選び直せるように保存します。";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;

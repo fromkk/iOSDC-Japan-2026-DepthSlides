@@ -2,6 +2,11 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_depthslides-cap._tcp</string>
+		<string>_depthslides-sync._tcp</string>
+	</array>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
@@ -34,17 +39,6 @@
 	</dict>
 	<key>UILaunchScreen</key>
 	<dict/>
-	<key>NSCameraUsageDescription</key>
-	<string>登壇中にこのiPhoneのカメラで撮影しDepth情報付きの写真をMacに送信する用途に加え、外部UVCカメラやContinuity Cameraの映像をスライドに表示する用途にも使用します。</string>
-	<key>NSPhotoLibraryAddUsageDescription</key>
-	<string>撮影した写真をあとで写真ライブラリから選び直せるように保存します。</string>
-	<key>NSLocalNetworkUsageDescription</key>
-	<string>同じネットワーク上のMac/iPhoneを見つけて、撮影した写真を送受信するために使用します。</string>
-	<key>NSBonjourServices</key>
-	<array>
-		<string>_depthslides-cap._tcp</string>
-		<string>_depthslides-sync._tcp</string>
-	</array>
 	<key>UISupportedInterfaceOrientations~iPad</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
