@@ -540,15 +540,29 @@ actor DepthEstimator {
     case .float16:
       // DepthPro などの変換済みモデルは出力が float16 になっていることが多いため、
       // NSNumber 経由のボクシングを避けて Float16 として直接読む。
-      let source = multiArray.dataPointer.bindMemory(to: Float16.self, capacity: multiArray.count)
-      for y in 0..<height {
-        for x in 0..<width {
-          let value = Float(source[y * rowStride + x * colStride])
-          floatValues[y * width + x] = value
-          minValue = min(minValue, value)
-          maxValue = max(maxValue, value)
+      #if arch(x86_64)
+        // Swift の Float16 は macOS x86_64 では利用できないため、
+        // UInt16 のビットパターンとして読んで手動で Float に変換する。
+        let source = multiArray.dataPointer.bindMemory(to: UInt16.self, capacity: multiArray.count)
+        for y in 0..<height {
+          for x in 0..<width {
+            let value = Self.float(fromHalfBits: source[y * rowStride + x * colStride])
+            floatValues[y * width + x] = value
+            minValue = min(minValue, value)
+            maxValue = max(maxValue, value)
+          }
         }
-      }
+      #else
+        let source = multiArray.dataPointer.bindMemory(to: Float16.self, capacity: multiArray.count)
+        for y in 0..<height {
+          for x in 0..<width {
+            let value = Float(source[y * rowStride + x * colStride])
+            floatValues[y * width + x] = value
+            minValue = min(minValue, value)
+            maxValue = max(maxValue, value)
+          }
+        }
+      #endif
     default:
       // NSNumber 経由の多次元添字（座標指定）は strides を意識せず安全にアクセスできる。
       var key = [NSNumber](repeating: 0, count: shape.count)
@@ -594,6 +608,41 @@ actor DepthEstimator {
     }
     return CIImage(cgImage: cgImage)
   }
+
+  #if arch(x86_64)
+    /// IEEE 754 binary16 のビットパターンを Float に変換する。
+    /// Swift の `Float16` が使えない macOS x86_64 向けのフォールバック。
+    private static func float(fromHalfBits bits: UInt16) -> Float {
+      let sign = UInt32(bits & 0x8000) << 16
+      let exponent = Int((bits >> 10) & 0x1F)
+      let mantissa = UInt32(bits & 0x03FF)
+
+      let resultBits: UInt32
+      switch exponent {
+      case 0:
+        if mantissa == 0 {
+          // ±0
+          resultBits = sign
+        } else {
+          // 非正規化数: 正規化しながら指数を調整する
+          var m = mantissa
+          var e: Int32 = -1
+          repeat {
+            m <<= 1
+            e += 1
+          } while (m & 0x0400) == 0
+          m &= 0x03FF
+          resultBits = sign | UInt32(Int32(127 - 15 - e) << 23) | (m << 13)
+        }
+      case 0x1F:
+        // ±Inf / NaN
+        resultBits = sign | 0x7F80_0000 | (mantissa << 13)
+      default:
+        resultBits = sign | UInt32(exponent + 127 - 15) << 23 | (mantissa << 13)
+      }
+      return Float(bitPattern: resultBits)
+    }
+  #endif
 }
 
 /// アプリ起動時に呼ぶ想定の公開エントリポイント。端末で利用可能な全モデルのうち、
