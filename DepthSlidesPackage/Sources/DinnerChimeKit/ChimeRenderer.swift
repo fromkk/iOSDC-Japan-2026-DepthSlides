@@ -58,9 +58,11 @@ public enum ChimeRenderer {
       guard onset < totalFrames else { continue }
 
       // §3.7: 1打ごとのばらつき
-      let x = voice.strikePosition
+      let x =
+        voice.strikePosition
         + Double.random(in: -voice.strikeJitter...voice.strikeJitter, using: &rng)
-      let detune = pow(2, Double.random(in: -voice.detuneCents...voice.detuneCents, using: &rng) / 1200)
+      let detune = pow(
+        2, Double.random(in: -voice.detuneCents...voice.detuneCents, using: &rng) / 1200)
       let gain = 1 + Double.random(in: -voice.levelJitter...voice.levelJitter, using: &rng)
 
       let t601 = fundamentalT60(ringTime: voice.ringTime, f0: f0)
@@ -71,7 +73,8 @@ public enum ChimeRenderer {
         guard f < sampleRate * aliasingLimitRatio else { continue }
 
         // §3.3: モード振幅
-        let amp = FreeFreeBar.shape(mode: m, at: x)
+        let amp =
+          FreeFreeBar.shape(mode: m, at: x)
           * pow(r, displacementExponent)
           * exp(-pow(f / voice.malletCutoff, 2))
           * gain
@@ -93,7 +96,8 @@ public enum ChimeRenderer {
 
       // §3.6: マレットノイズ（onset から 20 ms）
       if voice.malletNoiseLevel > 0 {
-        var filter = Biquad.bandpass(center: malletNoiseCenter, q: malletNoiseQ, sampleRate: sampleRate)
+        var filter = Biquad.bandpass(
+          center: malletNoiseCenter, q: malletNoiseQ, sampleRate: sampleRate)
         let noiseFrames = min(Int(malletNoiseDuration * sampleRate), totalFrames - onset)
         for k in 0..<noiseFrames {
           let t = Double(k) / sampleRate

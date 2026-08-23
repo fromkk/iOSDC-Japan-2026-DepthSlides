@@ -11,7 +11,7 @@ struct CameraObscuraProblem: View {
       converter.convertPage(
         """
         # カメラ・オブスキュラ（ピンホールカメラ）の問題
-        
+
         - ピントという概念はないがボヤけた感じになる
         - 光量が少ない
           - 対策としてレンズを利用

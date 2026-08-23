@@ -75,7 +75,8 @@ actor PeerCaptureConnection {
     guard count <= PeerCaptureProtocol.maxPayloadBytes else {
       throw PeerCaptureProtocol.FramingError.payloadTooLarge
     }
-    return try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Data, Error>) in
+    return try await withCheckedThrowingContinuation {
+      (continuation: CheckedContinuation<Data, Error>) in
       connection.receive(minimumIncompleteLength: count, maximumLength: count) {
         data, _, _, error in
         if let error {

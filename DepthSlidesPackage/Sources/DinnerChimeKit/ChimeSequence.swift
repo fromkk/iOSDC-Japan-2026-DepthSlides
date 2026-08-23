@@ -35,7 +35,9 @@ public struct ChimeSequence: Sendable, Equatable, Hashable {
   public static let descending5 = ChimeSequence(frequencies: [880, 660, 550, 440, 330])
 
   /// §2.1: 平均律（A/B比較用）。C#5 = 554.365 Hz が純正律より約 14 セント高い
-  public static let equalTemperedAscending4 = ChimeSequence(frequencies: [440, 554.365, 659.255, 880])
+  public static let equalTemperedAscending4 = ChimeSequence(frequencies: [
+    440, 554.365, 659.255, 880,
+  ])
 
   /// §2.3: 音符間隔を factor 倍（1.6 で放送設備の「ゆっくり」相当）
   public func slowed(by factor: Double) -> ChimeSequence {

@@ -44,7 +44,8 @@
     nonisolated let previewFrames: AsyncStream<Data>
     nonisolated private let previewFramesContinuation: AsyncStream<Data>.Continuation
     // 非Sendableな状態をMainActor外で完結させる、上記`SessionRunner`と同じパターン。
-    private let previewEncoder = PreviewFrameEncoder(targetLongEdge: 480, minFrameInterval: 1.0 / 15.0)
+    private let previewEncoder = PreviewFrameEncoder(
+      targetLongEdge: 480, minFrameInterval: 1.0 / 15.0)
 
     override init() {
       (previewFrames, previewFramesContinuation) = AsyncStream<Data>.makeStream(
@@ -151,7 +152,8 @@
 
     private func setUpRotationCoordinatorIfNeeded() {
       guard rotationCoordinator == nil, let device = activeDevice, let previewLayer else { return }
-      let coordinator = AVCaptureDevice.RotationCoordinator(device: device, previewLayer: previewLayer)
+      let coordinator = AVCaptureDevice.RotationCoordinator(
+        device: device, previewLayer: previewLayer)
       rotationCoordinator = coordinator
 
       applyPreviewRotationAngle(coordinator.videoRotationAngleForHorizonLevelPreview)
@@ -171,7 +173,8 @@
     /// 「今どちらを向けてフレーミングしているか」に対応する角度。プレビュー層本体と、
     /// Macへライブ配信するvideoDataOutputの両方に適用する(どちらも"今見えているもの")。
     private func applyPreviewRotationAngle(_ angle: CGFloat) {
-      if let connection = previewLayer?.connection, connection.isVideoRotationAngleSupported(angle) {
+      if let connection = previewLayer?.connection, connection.isVideoRotationAngleSupported(angle)
+      {
         connection.videoRotationAngle = angle
       }
       if let connection = videoDataOutput.connection(with: .video),
@@ -234,7 +237,9 @@
       guard baseFocalLength > 0 else { return nil }
       let ranges = format.supportedVideoZoomRangesForDepthDataDelivery
       guard
-        let widest = ranges.max(by: { ($0.upperBound - $0.lowerBound) < ($1.upperBound - $1.lowerBound) }
+        let widest = ranges.max(by: {
+          ($0.upperBound - $0.lowerBound) < ($1.upperBound - $1.lowerBound)
+        }
         )
       else { return nil }
       let lowerMM = widest.lowerBound * baseFocalLength

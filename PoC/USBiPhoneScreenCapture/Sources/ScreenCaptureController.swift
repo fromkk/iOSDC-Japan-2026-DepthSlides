@@ -2,7 +2,8 @@ import AVFoundation
 import Combine
 import os.log
 
-private let logger = Logger(subsystem: "info.fromkk.poc.USBiPhoneScreenCapture", category: "capture")
+private let logger = Logger(
+  subsystem: "info.fromkk.poc.USBiPhoneScreenCapture", category: "capture")
 
 @MainActor
 final class ScreenCaptureController: NSObject, ObservableObject {
@@ -52,7 +53,8 @@ final class ScreenCaptureController: NSObject, ObservableObject {
     )
     devices = discovery.devices
     logger.log(
-      "refreshDevices(.continuityCamera+.external/.video): count=\(self.devices.count, privacy: .public)")
+      "refreshDevices(.continuityCamera+.external/.video): count=\(self.devices.count, privacy: .public)"
+    )
     for device in devices {
       logger.log(
         "  device: name=\(device.localizedName, privacy: .public) deviceType=\(device.deviceType.rawValue, privacy: .public) transportType=\(device.transportType, privacy: .public) uniqueID=\(device.uniqueID, privacy: .public)"

@@ -31,30 +31,19 @@ struct ModelComparison: View {
         """
     case .spec:
       return """
-        # 配布されている ML モデルを利用して深度を推定する
+        # スペック比較
 
-        ## スペック比較
-
-        | | MiDaS Small | DA V2 Small | Depth Pro | DA3 Small |
-        |---|---|---|---|---|
-        | 公開 | 2020年 | 2024年6月 | 2024年10月 | 2025年11月 |
-        | 開発元 | Intel ISL | HKU / TikTok | Apple | ByteDance |
-        | バックボーン | CNN | ViT-S | ViT-L ×2 | ViT-S 相当 |
-        | パラメータ数 | 約21M | 24.8M | 約504M | 公称 0.08B ※ |
-        | モデルサイズ | 32MB | 48MB | **1.8GB** | 61MB |
-        | 入力解像度 | 256×256 | 518×392 | 1536×1536 | 504×378 |
+        \(specTable)
 
         ※ 単眼深度推論に使う部分のみを Core ML 変換したもの（61MB / FP16）
         """
     case .depthType:
       return """
-        # 配布されている ML モデルを利用して深度を推定する
+        # スペック比較
+
+        \(specTable)
 
         ## 深度の種類
-
-        | | MiDaS Small | DA V2 Small | Depth Pro | DA3 Small |
-        |---|---|---|---|---|
-        | 深度の種類 | 相対深度 | 相対深度 | **絶対深度（メートル）** | 相対深度 |
 
         - 相対深度: どこが手前でどこが奥かが分かる（ボケ生成にはこれで十分）
         - 絶対深度: メートル単位の実距離が分かる
@@ -63,13 +52,11 @@ struct ModelComparison: View {
         """
     case .license:
       return """
-        # 配布されている ML モデルを利用して深度を推定する
+        # スペック比較
+
+        \(specTable)
 
         ## ライセンス
-
-        | | MiDaS Small | DA V2 Small | Depth Pro | DA3 Small |
-        |---|---|---|---|---|
-        | ライセンス | MIT | Apache-2.0 ※ | apple-amlr | Apache-2.0 |
 
         - ※ Apache-2.0 なのは Small のみ（Base / Large / Giant は CC-BY-NC-4.0 で商用不可）
         - apple-amlr は研究用途向けライセンス（商用アプリへの組み込みは不可と考えるのが安全）
@@ -77,6 +64,19 @@ struct ModelComparison: View {
         """
     }
   }
+
+  private var specTable: String = """
+    | | MiDaS Small | DA V2 Small | Depth Pro | DA3 Small |
+    |---|---|---|---|---|
+    | 公開 | 2020年 | 2024年6月 | 2024年10月 | 2025年11月 |
+    | 開発元 | Intel ISL | HKU / TikTok | Apple | ByteDance |
+    | バックボーン | CNN | ViT-S | ViT-L ×2 | ViT-S 相当 |
+    | パラメータ数 | 約21M | 24.8M | 約504M | 公称 0.08B ※ |
+    | モデルサイズ | 32MB | 48MB | **1.8GB** | 61MB |
+    | 入力解像度 | 256×256 | 518×392 | 1536×1536 | 504×378 |
+    | 深度の種類 | 相対深度 | 相対深度 | **絶対深度（メートル）** | 相対深度 |
+    | ライセンス | MIT | Apache-2.0 ※ | apple-amlr | Apache-2.0 |
+    """
 
   var script: String {
     switch phase {

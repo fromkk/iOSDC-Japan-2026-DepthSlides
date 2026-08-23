@@ -67,7 +67,8 @@ enum DepthBackgroundRemoval {
       rawDepth = rawDepth.transformed(by: CGAffineTransform(scaleX: sx, y: sy))
     }
 
-    let selected = CGFloat(sampleAverageGrayscale(context: context, image: rawDepth, at: selectionPoint))
+    let selected = CGFloat(
+      sampleAverageGrayscale(context: context, image: rawDepth, at: selectionPoint))
 
     // mask = clamp((depth - (selected - margin)) / softness, 0, 1)
     //      = clamp(k * depth + k * (margin - selected), 0, 1)   (k = 1 / softness)
@@ -105,7 +106,8 @@ enum DepthBackgroundRemoval {
     bounds = bounds.intersection(image.extent)
     guard !bounds.isNull, bounds.width >= 1, bounds.height >= 1 else { return 0 }
 
-    let width = Int(bounds.width), height = Int(bounds.height)
+    let width = Int(bounds.width)
+    let height = Int(bounds.height)
     var pixels = [UInt8](repeating: 0, count: width * height * 4)
     context.render(
       image, toBitmap: &pixels, rowBytes: width * 4, bounds: bounds, format: .RGBA8,

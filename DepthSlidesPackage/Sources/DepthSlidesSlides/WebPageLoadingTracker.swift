@@ -27,8 +27,8 @@ private struct WebPageLoadingTrackerKey: EnvironmentKey {
   nonisolated static let defaultValue: WebPageLoadingTracker? = nil
 }
 
-public extension EnvironmentValues {
-  var webPageLoadingTracker: WebPageLoadingTracker? {
+extension EnvironmentValues {
+  public var webPageLoadingTracker: WebPageLoadingTracker? {
     get { self[WebPageLoadingTrackerKey.self] }
     set { self[WebPageLoadingTrackerKey.self] = newValue }
   }

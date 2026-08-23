@@ -2,7 +2,8 @@ import AVFoundation
 import ImageIO
 import os.log
 
-private let logger = Logger(subsystem: "info.fromkk.poc.USBiPhoneScreenCapture", category: "depth-read")
+private let logger = Logger(
+  subsystem: "info.fromkk.poc.USBiPhoneScreenCapture", category: "depth-read")
 
 struct DepthReadResult {
   let auxDataType: String
@@ -56,7 +57,8 @@ enum DepthFileReader {
         logger.error(
           "AVDepthData(fromDictionaryRepresentation:) failed: \(error.localizedDescription, privacy: .public)"
         )
-        return .failure(DepthReadError(message: "AVDepthDataへの変換に失敗: \(error.localizedDescription)"))
+        return .failure(
+          DepthReadError(message: "AVDepthDataへの変換に失敗: \(error.localizedDescription)"))
       }
     }
     return .failure(DepthReadError(message: "このファイルにはDepth/Disparityの補助データが見つかりませんでした"))

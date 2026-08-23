@@ -30,9 +30,9 @@ struct SensorSize: View {
 
       VStack(alignment: .leading) {
         Image(.sensorSizesOverlaidInside)
-                .resizable()
-                .aspectRatio(contentMode: .fit)
-                .frame(width: 600)
+          .resizable()
+          .aspectRatio(contentMode: .fit)
+          .frame(width: 600)
 
         Text("https://en.wikipedia.org/wiki/File:Sensor_sizes_overlaid_inside.svg")
           .font(slideTheme.bodyFont)

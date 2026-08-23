@@ -18,7 +18,8 @@ extension AVAudioPCMBuffer {
     )
     guard
       let format = AVAudioFormat(standardFormatWithSampleRate: sampleRate, channels: channelCount),
-      let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: AVAudioFrameCount(max(samples.count, 1)))
+      let buffer = AVAudioPCMBuffer(
+        pcmFormat: format, frameCapacity: AVAudioFrameCount(max(samples.count, 1)))
     else {
       preconditionFailure("Failed to allocate AVAudioPCMBuffer")
     }

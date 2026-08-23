@@ -103,7 +103,8 @@ public final class PresentationSyncCoordinator {
   @discardableResult
   private func step(direction: SlideStepDirection) -> Bool {
     guard let slideIndexController, !isApplyingRemoteChange else { return false }
-    let didStep = direction == .forward ? slideIndexController.forward() : slideIndexController.back()
+    let didStep =
+      direction == .forward ? slideIndexController.forward() : slideIndexController.back()
     guard didStep else { return false }
     let resultingIndex = slideIndexController.currentIndex
     let message = nextSlideIndexMessage(direction: direction, resultingIndex: resultingIndex)
@@ -136,7 +137,9 @@ public final class PresentationSyncCoordinator {
     Task { await connectionManager.send(.requestCurrentIndex, to: masterID) }
   }
 
-  private func handle(_ message: PresentationSyncMessage, from connectionID: PresentationSyncConnectionID)
+  private func handle(
+    _ message: PresentationSyncMessage, from connectionID: PresentationSyncConnectionID
+  )
     async
   {
     switch message {

@@ -11,14 +11,14 @@ struct SlidePDFExporter {
 
 // MARK: - Slide のフェーズ操作ヘルパー（PhasedStateStoreProtocol を使わない）
 
-private extension Slide {
+extension Slide {
   /// SlidePhasedState の全フェーズ数を返す
-  var allPhaseCount: Int {
+  fileprivate var allPhaseCount: Int {
     SlidePhasedState.allCases.count
   }
 
   /// 指定インデックスのフェーズを container 上の PhasedStateStore に設定する
-  func setPhase(at index: Int, on container: ObservableObjectContainer) {
+  fileprivate func setPhase(at index: Int, on container: ObservableObjectContainer) {
     let store: PhasedStateStore<SlidePhasedState> = container.resolve {
       PhasedStateStore()
     }

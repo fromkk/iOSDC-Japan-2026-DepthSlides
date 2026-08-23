@@ -137,8 +137,7 @@ struct ZoomableFocusableImageView: View {
 
   /// コンテナ基準のタップ位置から、現在のズーム倍率・パンオフセットを打ち消して
   /// 「等倍・パン無し」のローカル座標（containerSize 基準）に変換する。
-  private func unscaledLocalPoint(from containerPoint: CGPoint, containerSize: CGSize) -> CGPoint
-  {
+  private func unscaledLocalPoint(from containerPoint: CGPoint, containerSize: CGSize) -> CGPoint {
     let center = CGPoint(x: containerSize.width / 2, y: containerSize.height / 2)
     let afterOffset = CGPoint(
       x: containerPoint.x - currentOffset.width, y: containerPoint.y - currentOffset.height)
@@ -178,7 +177,8 @@ struct ZoomableFocusableImageView: View {
 #Preview {
   @Previewable @State var zoomState = ImageZoomState.identity
 
-  let width = 400, height = 300
+  let width = 400
+  let height = 300
   guard
     let context = CGContext(
       data: nil, width: width, height: height, bitsPerComponent: 8, bytesPerRow: 0,

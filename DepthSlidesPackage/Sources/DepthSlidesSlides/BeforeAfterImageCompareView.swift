@@ -245,8 +245,7 @@ struct BeforeAfterImageCompareView: View {
   /// `imageStack` は `.scaleEffect(currentScale)` の後に `.offset(currentOffset)`
   /// を適用しているため、逆変換は「オフセットを引く → 中心を基準にスケールで割る」
   /// の順で行う（`scaleEffect` のデフォルトアンカーは中心）。
-  private func unscaledLocalPoint(from containerPoint: CGPoint, containerSize: CGSize) -> CGPoint
-  {
+  private func unscaledLocalPoint(from containerPoint: CGPoint, containerSize: CGSize) -> CGPoint {
     let center = CGPoint(x: containerSize.width / 2, y: containerSize.height / 2)
     let afterOffset = CGPoint(
       x: containerPoint.x - currentOffset.width, y: containerPoint.y - currentOffset.height)

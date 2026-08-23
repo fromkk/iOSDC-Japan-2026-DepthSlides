@@ -1,6 +1,6 @@
 import AVFoundation
-import Observation
 import OSLog
+import Observation
 
 private let logger = Logger(subsystem: "info.fromkk.DepthSlides", category: "UVCCameraSession")
 

@@ -27,12 +27,14 @@ actor PresentationSyncConnectionManager {
 
   /// 手動同期ボタン(`requestCurrentIndex`)への返信や、`hello`の送信元記録のために
   /// どのコネクションから届いたメッセージかを一緒に流す。
-  let incomingMessages: AsyncStream<(id: PresentationSyncConnectionID, message: PresentationSyncMessage)>
+  let incomingMessages:
+    AsyncStream<(id: PresentationSyncConnectionID, message: PresentationSyncMessage)>
   private let incomingMessagesContinuation:
     AsyncStream<(id: PresentationSyncConnectionID, message: PresentationSyncMessage)>.Continuation
 
   init() {
-    (localEvents, localEventsContinuation) = AsyncStream.makeStream(of: PresentationSyncLocalEvent.self)
+    (localEvents, localEventsContinuation) = AsyncStream.makeStream(
+      of: PresentationSyncLocalEvent.self)
     (incomingMessages, incomingMessagesContinuation) = AsyncStream.makeStream(
       of: (id: PresentationSyncConnectionID, message: PresentationSyncMessage).self)
   }

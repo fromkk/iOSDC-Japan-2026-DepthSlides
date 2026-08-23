@@ -69,8 +69,8 @@ struct DepthBackgroundRemovalView: View {
       VStack(spacing: 4) {
         HStack {
           Text(headerMessage)
-          .font(.system(size: 14))
-          .foregroundStyle(slideTheme.secondaryTextColor)
+            .font(.system(size: 14))
+            .foregroundStyle(slideTheme.secondaryTextColor)
           if selectionPoint != nil {
             Button("選択をリセット") {
               selectionPoint = nil
