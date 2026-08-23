@@ -10,6 +10,8 @@ struct DepthSlidesApp: App {
   private static let configuration = SlideConfiguration()
   private static let syncCoordinator = PresentationSyncCoordinator()
   let theme: MarkdownToSlide.SlideTheme = .default
+  /// macOS Presenter ウィンドウに表示する原稿のフォントサイズ
+  private static let presenterScriptFontSize: CGFloat = 20
 
   var presentationContentView: some View {
     SlideRouterView(
@@ -52,7 +54,12 @@ struct DepthSlidesApp: App {
         ) {
           SlideRouterView(slideIndexController: Self.configuration.slideIndexController)
             .background(theme.backgroundColor)
+            // Presenter 用に大きくした font 環境がスライド本体に漏れないようリセット
+            .font(nil)
         }
+        // macOSPresenterView の原稿 Text はフォント未指定で環境の font を継承するので、
+        // ここで上書きして Presenter の原稿を読みやすい大きさにする。
+        .font(.system(size: Self.presenterScriptFontSize))
         .environment(\.presentationSyncCoordinator, Self.syncCoordinator)
         .environment(\.slideAudioEnabled, false)
         .preferredColorScheme(.light)
