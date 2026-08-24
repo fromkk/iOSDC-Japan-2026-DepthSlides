@@ -1,4 +1,5 @@
 import DepthSlidesSlides
+import MarkdownToSlide
 import PDFKit
 import SlideKit
 import SwiftUI
@@ -47,9 +48,16 @@ extension SlidePDFExporter {
       slides: [slide]
     )
 
+    // アプリ本体（DepthSlidesApp）と同じくテーマ背景を敷き、テーマを適用する。
+    // これがないとダークテーマの白文字が透明背景に描かれ、PDF ではほぼ真っ白に見える。
+    let theme = MarkdownToSlide.SlideTheme.default
     return SlideScreen(slideSize: slideSize) {
-      AnyView(slide)
+      ZStack {
+        theme.backgroundColor
+        AnyView(slide)
+      }
     }
+    .slideTheme(theme)
     .environment(\.slideIndexController, pdfController)
     .environment(\.observableObjectContainer, container)
     .environment(\.webPageLoadingTracker, tracker)
@@ -162,11 +170,22 @@ extension SlidePDFExporter {
       let response = await panel.begin()
       guard response == .OK, let url = panel.url else { return }
 
-      guard let pdfData = await createPDFDataMac(slideIndexController: slideIndexController) else {
-        return
-      }
+      try? await export(to: url, slideIndexController: slideIndexController)
+    }
 
-      try? pdfData.write(to: url)
+    enum ExportError: Error {
+      case renderFailed
+    }
+
+    /// 保存パネルを出さずに指定 URL へ PDF を書き出す。
+    /// 起動引数 `--export-pdf <path>` からの自動書き出し（scripts/export_slides_pdf.sh）でも使う。
+    func export(to url: URL, slideIndexController: SlideIndexController) async throws {
+      guard let pdfData = await createPDFDataMac(slideIndexController: slideIndexController) else {
+        throw ExportError.renderFailed
+      }
+      try FileManager.default.createDirectory(
+        at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+      try pdfData.write(to: url)
     }
 
     private func createPDFDataMac(slideIndexController: SlideIndexController) async -> Data? {
@@ -180,10 +199,12 @@ extension SlidePDFExporter {
       )
 
       var images: [NSImage] = []
+      let totalSlides = slideIndexController.slides.count
 
-      for slide in slideIndexController.slides {
+      for (slideIndex, slide) in slideIndexController.slides.enumerated() {
         let container = ObservableObjectContainer()
         let phases = slide.allPhaseCount
+        Self.log("slide \(slideIndex + 1)/\(totalSlides) \(type(of: slide)) phases=\(phases)")
 
         for phaseIndex in 0..<phases {
           let tracker = WebPageLoadingTracker()
@@ -201,7 +222,11 @@ extension SlidePDFExporter {
           window.orderBack(nil)
 
           try? await Task.sleep(for: .milliseconds(300))
+          let waitStart = ContinuousClock.now
           await waitForTrackerMac(tracker)
+          Self.log(
+            "  phase \(phaseIndex + 1)/\(phases) waited \(ContinuousClock.now - waitStart) loaded=\(tracker.isAllLoaded)"
+          )
 
           guard
             let bitmapRep = hostingView.bitmapImageRepForCachingDisplay(in: pageRect)
@@ -224,6 +249,10 @@ extension SlidePDFExporter {
       }
 
       return pdfDocument.dataRepresentation()
+    }
+
+    private static func log(_ message: String) {
+      FileHandle.standardError.write(Data("[PDFExport] \(message)\n".utf8))
     }
 
     private func waitForTrackerMac(_ tracker: WebPageLoadingTracker) async {

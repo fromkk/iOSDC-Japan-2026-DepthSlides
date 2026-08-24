@@ -10,6 +10,15 @@ struct DepthSlidesApp: App {
   private static let configuration = SlideConfiguration()
   private static let syncCoordinator = PresentationSyncCoordinator()
   let theme: MarkdownToSlide.SlideTheme = .default
+
+  init() {
+    #if os(macOS)
+      // --export-pdf 指定時は起動後に自動で PDF を書き出して終了する
+      Task { @MainActor in
+        await Self.runAutomaticPDFExportIfRequested()
+      }
+    #endif
+  }
   /// macOS Presenter ウィンドウに表示する原稿のフォントサイズ
   private static let presenterScriptFontSize: CGFloat = 20
 
@@ -66,4 +75,30 @@ struct DepthSlidesApp: App {
       }
     #endif
   }
+
+  #if os(macOS)
+    /// 起動引数 `--export-pdf <path>` が指定されていたら、保存パネルなしで
+    /// 全スライドを PDF に書き出してアプリを終了する（CLI からの自動書き出し用）。
+    private static func runAutomaticPDFExportIfRequested() async {
+      let arguments = CommandLine.arguments
+      guard let flagIndex = arguments.firstIndex(of: "--export-pdf") else { return }
+      FileHandle.standardError.write(Data("[PDFExport] launch arguments: \(arguments)\n".utf8))
+      // ウィンドウが出てから書き出しを始める（起動直後はまだシーンが無い）
+      try? await Task.sleep(for: .seconds(1))
+      let outputPath =
+        arguments.indices.contains(flagIndex + 1)
+        ? arguments[flagIndex + 1]
+        : "DepthSlides.pdf"
+      let url = URL(fileURLWithPath: outputPath)
+
+      do {
+        try await SlidePDFExporter().export(to: url, slideIndexController: configuration.slideIndexController)
+        FileHandle.standardError.write(Data("Exported PDF to \(url.path)\n".utf8))
+        exit(0)
+      } catch {
+        FileHandle.standardError.write(Data("PDF export failed: \(error)\n".utf8))
+        exit(1)
+      }
+    }
+  #endif
 }
