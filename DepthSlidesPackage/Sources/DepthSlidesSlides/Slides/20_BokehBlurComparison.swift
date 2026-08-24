@@ -12,33 +12,28 @@ struct BokehBlurComparison: View {
         """
         # 様々なボケを試して最適なものを選ぶ
 
-        - CIBoxBlur
-          - 正方形の範囲のピクセルから色の中央値を求めてぼかす（radius は正方形の幅）
-        - CIDiscBlur
-          - radius で指定した円の中のピクセルから色の中央値を求めてぼかす
-        - CIGaussianBlur
-          - radius で指定した円の中を、ガウス分布に従って中心から外側へぼかす
-        - CIMaskedVariableBlur
-          - グレースケールのマスクでぼかしの強さを変える（黒はぼかさず、白が最大）
-        - CIZoomBlur
-          - center を中心に amount 分ズームしたようなブレを加える
-        - CIMotionBlur
-          - angle（ラジアン）で指定した方向へ radius ピクセル分ブレを伸ばす
-        - CIBokehBlur
-          - 円形のボケに ringSize / ringAmount のリング状の強調と softness を加える
+        Core Image のブラーは 7 種類。役割で分けると 4 グループ
+
+        - 一様にぼかす: **CIBoxBlur** / **CIDiscBlur** / **CIGaussianBlur**
+          - 範囲の形（正方形・円・ガウス分布）が違うだけ。深度マスクで合成して使う
+        - 場所ごとに強さを変える: **CIMaskedVariableBlur**
+          - 深度マップをそのままマスクにできる
+        - レンズ風: **CIBokehBlur**
+          - 円形のボケにリング状の強調（ringSize / ringAmount）と softness
+        - 演出寄り: CIZoomBlur / CIMotionBlur
+          - ブレの表現なので今回の目的には合わない
         """
       )
     }
   }
 
   var script: String = """
-    最後に、ボケの作り方です。Core Image には様々なブラーのフィルターが用意されています。Apple のドキュメントを見ると、それぞれ適用されるボケが違うことが分かります。
-    CIBoxBlur は正方形の範囲のピクセルから色の中央値を求めてぼかすもので、radius はその正方形の幅になります。CIDiscBlur は同じく中央値を使いますが、範囲が radius で指定した円になります。
-    CIGaussianBlur は円の中をガウス分布に従って中心から外側へぼかすもので、一番よく使われるブラーです。
-    CIMaskedVariableBlur はグレースケールのマスク画像でぼかしの強さを場所ごとに変えられるもので、黒い部分はぼかさず、白い部分が最大のボケになります。深度マップをそのままマスクとして使えるのがポイントです。
-    CIZoomBlur は center を中心に amount 分ズームしたようなブレ、CIMotionBlur は angle で指定した方向へ radius ピクセル分ブレを伸ばすもので、これらはボケというより演出寄りですね。
-    そして CIBokehBlur は、円形のボケに ringSize と ringAmount でリング状の強調を、softness で柔らかさを加えられる、レンズのボケ味に一番近いフィルターです。
-    これもどう違うのか、シミュレーターを作って比較してみます。
+    最後に、ボケの作り方です。Core Image には 7 種類のブラーフィルターがありますが、役割で分けると 4 グループになります。
+    1 つ目は画像全体を一様にぼかすもの。Box、Disc、Gaussian で、ぼかす範囲の形が違うだけです。これらは深度マップをマスクにして、ボケた画像と元画像を合成して使います。
+    2 つ目は CIMaskedVariableBlur で、グレースケールのマスクで場所ごとにボケの強さを変えられます。深度マップをそのままマスクにできるのがポイントです。
+    3 つ目は CIBokehBlur で、円形のボケにリング状の強調と柔らかさを加えられる、レンズのボケ味に一番近いフィルターです。
+    Zoom と Motion はブレの表現なので今回の目的には合いません。
+    これもどう違うのか、シミュレーターで比較してみます。
     """
 
   var transition: AnyTransition = AnyTransition.awesome

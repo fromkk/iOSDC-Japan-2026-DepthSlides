@@ -7,7 +7,8 @@ import SwiftUI
 @MainActor
 struct SlidePDFExporter {
   let slideSize = SlideSize.standard16_9
-  private static let webPageLoadTimeout: Duration = .seconds(10)
+  /// Web ページの読み込みや、まとめスライドの深度推定（初回はモデルのコンパイルを含む）を待つ上限
+  private static let webPageLoadTimeout: Duration = .seconds(120)
 }
 
 // MARK: - Slide のフェーズ操作ヘルパー（PhasedStateStoreProtocol を使わない）

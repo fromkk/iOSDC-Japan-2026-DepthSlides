@@ -12,6 +12,10 @@ struct ConvexLensSimulation: View {
         .font(slideTheme.headingH1Font)
         .foregroundStyle(slideTheme.primaryTextColor)
 
+      Text("レンズは光を一点に集める。集まる位置とスクリーンがずれると像がにじむ ＝ ボケ")
+        .font(slideTheme.headingH3Font)
+        .foregroundStyle(slideTheme.accentColor)
+
       ConvexLensSlideView()
     }
     .padding(slideTheme.contentPadding)
@@ -19,7 +23,7 @@ struct ConvexLensSimulation: View {
   }
 
   var script: String = """
-    レンズを通した場合のシミュレーションがこちらです。
+    針の穴だけのカメラ・オブスキュラは光量が少なくて暗いので、光を集めるためにレンズが使われるようになりました。そのシミュレーションがこちらです。
     レンズの左側が投影する物体、右側がスクリーン（カメラではセンサー）です。
     このオレンジの線が焦点距離です。
     針の穴とは違ってレンズを通すと広い光を一箇所に集めることができるので焦点を作ることができます。

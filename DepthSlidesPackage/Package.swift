@@ -47,6 +47,9 @@ let package = Package(
       ],
       resources: [
         .copy("Models"),
+        // 深度情報付き HEIC などを加工せずそのまま同梱する（xcassets 経由だと
+        // AVDepthData の補助データが取り出せないため）
+        .copy("DepthSamples"),
         .process("Resources"),
       ]
     ),
