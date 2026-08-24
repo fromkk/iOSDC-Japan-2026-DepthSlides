@@ -144,7 +144,7 @@ https://commons.wikimedia.org/wiki/File:1646_Athanasius_Kircher_-_Camera_obscura
 
 ---
 
-## ボケの違和感を改善するアプローチ
+## スマホで撮影した写真をミラーレス級に近づけるためのアプローチ
 
 - 写真に含まれる深度情報（AVDepthData）を取得してボケさせてみる（ポートレートモードのアプローチ）
 - 配布されている ML モデルを利用して深度を推定する

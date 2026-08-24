@@ -10,7 +10,7 @@ struct BokehImprovementApproaches: View {
     SlideWrapper {
       converter.convertPage(
         """
-        # ボケの違和感を改善するアプローチ
+        # スマホで撮影した写真をミラーレス級に近づけるためのアプローチ
 
         - 写真に含まれる深度情報（AVDepthData）を取得してボケさせてみる（ポートレートモードのアプローチ）
         - 配布されている ML モデルを利用して深度を推定する
