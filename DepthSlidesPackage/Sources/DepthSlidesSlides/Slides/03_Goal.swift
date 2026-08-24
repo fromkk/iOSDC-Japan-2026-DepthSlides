@@ -25,7 +25,7 @@ struct GoalSlide: View {
 
       Text("iPhone の写真を、後処理でミラーレスのボケに近づける")
         .font(theme.headingH2Font)
-        .foregroundStyle(theme.accentColor)
+        .foregroundStyle(theme.primaryTextColor)
         .frame(maxWidth: .infinity)
     }
     .padding(theme.contentPadding)
@@ -47,8 +47,8 @@ struct GoalSlide: View {
   }
 
   var script: String = """
-    今日のゴールを先に言ってしまいます。左の iPhone の写真を、右のミラーレスで撮ったような、主題だけが浮き上がるボケのある写真に、後処理で近づけたい。
-    そのために「なぜ iPhone はボケないのか」「深度をどう手に入れるか」「どうボカすか」の順で話していきます。
+    今日のゴールはこれです。左がさっきの iPhone で撮った写真で、これを後処理で、右のミラーレスで撮ったような主題だけが浮き上がる写真に近づけたい、というのが今日のお話です。
+    そのためにまず、なぜ iPhone はボケないのかというところから見ていきます。
     """
 
   var transition: AnyTransition = AnyTransition.awesome

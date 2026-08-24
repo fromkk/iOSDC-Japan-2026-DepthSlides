@@ -13,10 +13,6 @@ struct BokehImprovementApproaches: View {
         .font(theme.headingH1Font)
         .foregroundStyle(theme.primaryTextColor)
       PipelineDiagramView()
-      Text("ポートレートモードと同じことを、自分でやる")
-        .font(theme.headingH2Font)
-        .foregroundStyle(theme.accentColor)
-        .frame(maxWidth: .infinity)
     }
     .padding(theme.contentPadding)
   }

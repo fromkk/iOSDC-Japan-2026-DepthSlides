@@ -50,10 +50,6 @@ struct EmbeddedDepth: View {
         }
         .frame(width: 520)
       }
-
-      Text("ポートレートモードで撮った写真にしか入っていない → 普通の写真・他のカメラの写真には無い")
-        .font(theme.headingH3Font)
-        .foregroundStyle(theme.accentColor)
     }
     .padding(theme.contentPadding)
     .task { await load() }
