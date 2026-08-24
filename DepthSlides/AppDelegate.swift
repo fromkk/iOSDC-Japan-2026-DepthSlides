@@ -19,6 +19,8 @@
       didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
     ) -> Bool {
       logger.info("\(#function)")
+      // 登壇中にスライドを表示したまま放置しても画面が自動ロックされないようにする
+      application.isIdleTimerDisabled = true
       syncCoordinator.start(attachingTo: configuration.slideIndexController)
       return true
     }
