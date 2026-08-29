@@ -22,6 +22,10 @@ let package = Package(
       name: "DinnerChimeKit",
       targets: ["DinnerChimeKit"]
     ),
+    .library(
+      name: "EventPRSlides",
+      targets: ["EventPRSlides"]
+    ),
   ],
   dependencies: [
     .package(url: "https://github.com/mtj0928/SlideKit", branch: "main"),
@@ -38,11 +42,24 @@ let package = Package(
     .target(
       name: "DinnerChimeKit"
     ),
+    // 登壇の最後に出すイベント宣伝スライド。深度推定とは独立していて、
+    // 宣伝だけの単体アプリ（EventPR）からも本編スライドからも使う。
+    .target(
+      name: "EventPRSlides",
+      dependencies: [
+        "MarkdownToSlide",
+        .product(name: "SlideKit", package: "SlideKit"),
+      ],
+      resources: [
+        .process("Resources")
+      ]
+    ),
     .target(
       name: "DepthSlidesSlides",
       dependencies: [
         "MarkdownToSlide",
         "DinnerChimeKit",
+        "EventPRSlides",
         .product(name: "SlideKit", package: "SlideKit"),
       ],
       resources: [
@@ -50,7 +67,6 @@ let package = Package(
         // 深度情報付き HEIC などを加工せずそのまま同梱する（xcassets 経由だと
         // AVDepthData の補助データが取り出せないため）
         .copy("DepthSamples"),
-        .process("Resources"),
       ]
     ),
     .testTarget(
