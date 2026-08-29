@@ -32,6 +32,7 @@ public struct SlideConfiguration {
     BokehFilterSimulator()
     // 第3幕: 結論
     Summary()
+    ReferenceBook()
     DepthOtherUseCases()
     DepthBackgroundRemovalDemo()
     SaitamaSwiftPR()
