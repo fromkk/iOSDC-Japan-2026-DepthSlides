@@ -8,6 +8,10 @@ iOSDC 登壇資料。複数の深度推定モデルを比較して、iPhoneで�
 - Xcode MCP が利用可能な場合はそちらを優先して使うこと。
 - `xcodebuild` が `active developer directory '/Library/Developer/CommandLineTools' is a command line tools instance` エラーで失敗する場合、`xcode-select` が Command Line Tools を指しており、フル Xcode を指していないことが原因。この設定変更はユーザー自身に行ってもらうこと（勝手に `xcode-select -s` を実行しない）。
 
+## 既知の落とし穴
+
+- 動画を再生するスライド（`SaitamaSwiftPR` の `VideoPlayer`）のために、両アプリターゲットで `OTHER_LDFLAGS = -Wl,-needed_framework,AVKit` を指定している。AVKit を import しているのは `EventPRSlides` パッケージだけで、アプリのコードからは AVKit のシンボルを直接参照しないため、これがないとリンカが「未使用の dylib」として AVKit を落としてしまう。すると `_AVKit_SwiftUI` だけがリンクされた状態になり、**Release ビルドでのみ**動画スライドの表示時に `failed to demangle superclass of VideoPlayerView from mangled name 'So12AVPlayerViewC'` で abort する（Debug では再現しない）。
+
 ## 構成
 
 - `DepthSlides.xcodeproj`: アプリ本体（iOS/macOS）と、宣伝スライドだけの単体アプリ `EventPR` の2ターゲット

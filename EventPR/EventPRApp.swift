@@ -1,3 +1,10 @@
+// NOTE: AVKit は `OTHER_LDFLAGS = -Wl,-needed_framework,AVKit` で明示的に
+// リンクしている。AVKit を import しているのは EventPRSlides パッケージ側だけで、
+// アプリのコードからは AVKit のシンボルを直接参照しないため、そのままだと
+// リンカが「未使用の dylib」として AVKit を落としてしまう。すると
+// `_AVKit_SwiftUI` だけがリンクされた状態になり、Release ビルドで動画スライドを
+// 表示した瞬間に `failed to demangle superclass of VideoPlayerView from mangled
+// name 'So12AVPlayerViewC'` で abort する（Debug では再現しない）。
 import EventPRSlides
 import MarkdownToSlide
 import SlideKit
