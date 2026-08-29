@@ -294,6 +294,24 @@ Core Image のブラーは 7 種類。役割で分けると 4 グループ
 
 ---
 
+## PR  この先のイベント
+
+- extension DC 2026 Day1  9/18(金) 19:00〜22:00 / LINEヤフー 赤坂オフィス
+  - https://extension-dc.connpass.com/event/391184/
+- extension DC 2026 Day2  9/19(土) 12:30〜19:00 / 六本木ヒルズ某所
+  - https://extension-dc.connpass.com/event/391185/
+- Kanagawa.swift #3  10/31(土) 12:00〜21:00 / Hamee 株式会社 (小田原)
+  - https://japan-region-swift.connpass.com/event/389036/
+
+（QR は URL から実行時に生成している）
+
+^ ここから宣伝です。まずこの先のイベントを3つ紹介させてください。
+^ 9月18日金曜の夜と19日土曜に、extension DC 2026 を Day1・Day2 の2日間で開催します。2026年上半期に発表・注目されたトピックを振り返る内容で、どちらも参加費無料です。
+^ 10月31日土曜には、小田原の Hamee さんで Kanagawa.swift #3 があります。こちらはお弁当と懇親会つきです。
+^ どれも気になるものがあれば QR から見てみてください。
+
+---
+
 ## PR  11/21(土) Saitama.swift やります
 
 - 埼玉県初のJapan-\\(region).swift
@@ -303,7 +321,7 @@ Core Image のブラーは 7 種類。役割で分けると 4 グループ
   - 人生トークなどもできる
   - 一緒に餃子食べましょう
 
-^ 最後に宣伝です。11月21日土曜日に、埼玉県初の Japan-\\(region).swift、Saitama.swift をやります。
+^ そしてもう一つ、11月21日土曜日に、埼玉県初の Japan-\\(region).swift、Saitama.swift をやります。
 ^ 会場は所沢市民文化センター ミューズです。
 ^ 懇親会はぎょうざの満洲でやります。少し早い忘年会として、人生トークなどもしつつ、一緒に餃子を食べましょう。
 ^ 以上です。ご清聴ありがとうございました。

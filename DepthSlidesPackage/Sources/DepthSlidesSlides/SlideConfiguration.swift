@@ -35,6 +35,7 @@ public struct SlideConfiguration {
     ReferenceBook()
     DepthOtherUseCases()
     DepthBackgroundRemovalDemo()
+    UpcomingEvents()
     SaitamaSwiftPR()
   }
 
