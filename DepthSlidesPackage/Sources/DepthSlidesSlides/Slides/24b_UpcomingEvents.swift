@@ -15,6 +15,9 @@ struct UpcomingEvents: View {
     let date: String
     let venue: String
     let url: String
+    /// イベントのバナー・ロゴ画像。縦横比がイベントごとに違う（16:9 のバナーも
+    /// 正方形のロゴもある）ため、カード内では高さを揃えた枠に fit させる。
+    var banner: ImageResource?
   }
 
   static let events: [Event] = [
@@ -23,20 +26,26 @@ struct UpcomingEvents: View {
       name: "extension DC 2026 Day1",
       date: "9/18(金) 19:00〜22:00",
       venue: "LINEヤフー 赤坂オフィス",
-      url: "https://extension-dc.connpass.com/event/391184/"),
+      url: "https://extension-dc.connpass.com/event/391184/",
+      banner: .extensionDc),
     Event(
       id: "extension-dc-day2",
       name: "extension DC 2026 Day2",
       date: "9/19(土) 12:30〜19:00",
       venue: "六本木ヒルズ某所",
-      url: "https://extension-dc.connpass.com/event/391185/"),
+      url: "https://extension-dc.connpass.com/event/391185/",
+      banner: .extensionDc),
     Event(
       id: "kanagawa-swift-3",
       name: "Kanagawa.swift #3",
       date: "10/31(土) 12:00〜21:00",
       venue: "Hamee 株式会社 (小田原)",
-      url: "https://japan-region-swift.connpass.com/event/389036/"),
+      url: "https://japan-region-swift.connpass.com/event/389036/",
+      banner: .kanagawaSwift),
   ]
+
+  /// バナー・ロゴを収める高さ。縦横比の違う画像を並べても頭が揃うようにする。
+  private static let bannerHeight: CGFloat = 180
 
   var body: some View {
     VStack(alignment: .leading, spacing: 24) {
@@ -56,6 +65,15 @@ struct UpcomingEvents: View {
 
   private func eventCard(_ event: Event) -> some View {
     VStack(spacing: 12) {
+      if let banner = event.banner {
+        Image(banner)
+          .resizable()
+          .aspectRatio(contentMode: .fit)
+          .frame(height: Self.bannerHeight)
+          .clipShape(RoundedRectangle(cornerRadius: 8))
+          .accessibilityLabel(event.name)
+      }
+
       Text(event.name)
         .font(.system(size: 34, weight: .bold))
         .foregroundStyle(theme.primaryTextColor)
