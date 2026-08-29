@@ -11,6 +11,10 @@ enum DepthSampleAssets {
     case portraitWithDepth = "IMG_1606.heic"
     /// iPhone 17 Pro で普通に撮影したひまわり（深度なし JPEG）
     case sunflowerIPhone = "IMG_2569.jpeg"
+    /// iPhone 17 Pro で撮影した東京の夜景（深度なし HEIC）。窓明かりが無数の点光源に
+    /// なるため、ブラーフィルターごとのボケの「形」の違いが素直に出る。
+    /// 遠景なので元画像は全域シャープで、かけたボケだけが見える点も比較向き。
+    case cityNight = "IMG_8253.heic"
   }
 
   static func data(for sample: Sample) -> Data? {

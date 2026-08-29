@@ -17,6 +17,10 @@ struct DepthSlidesApp: App {
       Task { @MainActor in
         await Self.runAutomaticPDFExportIfRequested()
       }
+      // --render-bokeh 指定時は Before/After 画像を書き出して終了する
+      Task { @MainActor in
+        await Self.runBokehBeforeAfterRenderIfRequested()
+      }
     #endif
   }
   /// macOS Presenter ウィンドウに表示する原稿のフォントサイズ
@@ -97,6 +101,28 @@ struct DepthSlidesApp: App {
         exit(0)
       } catch {
         FileHandle.standardError.write(Data("PDF export failed: \(error)\n".utf8))
+        exit(1)
+      }
+    }
+
+    /// 起動引数 `--render-bokeh <入力ディレクトリ> <出力ディレクトリ>` が
+    /// 指定されていたら、まとめ前の Before/After 比較スライド用の画像を
+    /// 書き出してアプリを終了する（scripts/render_bokeh_before_after.sh）。
+    private static func runBokehBeforeAfterRenderIfRequested() async {
+      let arguments = CommandLine.arguments
+      guard let flagIndex = arguments.firstIndex(of: "--render-bokeh") else { return }
+      guard arguments.indices.contains(flagIndex + 2) else {
+        FileHandle.standardError.write(
+          Data("usage: --render-bokeh <inputDirectory> <outputDirectory>\n".utf8))
+        exit(1)
+      }
+      let input = URL(fileURLWithPath: arguments[flagIndex + 1])
+      let output = URL(fileURLWithPath: arguments[flagIndex + 2])
+      do {
+        try await BokehBeforeAfterRenderer.render(inputDirectory: input, outputDirectory: output)
+        exit(0)
+      } catch {
+        FileHandle.standardError.write(Data("Bokeh render failed: \(error)\n".utf8))
         exit(1)
       }
     }

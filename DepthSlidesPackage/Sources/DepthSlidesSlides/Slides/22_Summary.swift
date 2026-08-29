@@ -8,7 +8,6 @@ struct Summary: View {
 
   var body: some View {
     SlideWrapper {
-      // TODO: 比較の結論が出たら xxx / yyy を採用したモデル・フィルターに置き換える
       converter.convertPage(
         """
         # まとめ
@@ -17,7 +16,7 @@ struct Summary: View {
         - 写真に内蔵されている深度情報を取得してみました
         - 配布されているモデルを利用して深度を推定してみました
         - ボケの Filter を比較してみました
-        - 今回僕はモデルに xxx を選び、フィルターに yyy を選びました
+        - 今回僕はモデルに **Depth Anything V3 (da3-small)** を選び、フィルターに **CIGaussianBlur** を選びました
         """
       )
     }
@@ -25,7 +24,7 @@ struct Summary: View {
 
   var script: String = """
     まとめです。今日はカメラの歴史と仕組みを振り返り、写真に内蔵されている深度情報を取得し、配布されているモデルで深度を推定して、ボケのフィルターを比較してみました。
-    その結果、今回僕はモデルに xxx を、フィルターに yyy を選びました。
+    その結果、今回僕はモデルに Depth Anything V3 の da3-small を、フィルターに CIGaussianBlur を選びました。
     """
 
   var transition: AnyTransition = AnyTransition.awesome
