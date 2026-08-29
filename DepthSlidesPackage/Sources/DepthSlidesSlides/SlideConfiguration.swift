@@ -29,12 +29,13 @@ public struct SlideConfiguration {
     DepthModelSimulator()
     BokehSectionDivider()
     BokehBlurComparison()
-    BokehFilterSimulator()
+    BokehFilterResults()
     // 第3幕: 結論
     Summary()
     ReferenceBook()
     DepthOtherUseCases()
     DepthBackgroundRemovalDemo()
+    UpcomingEvents()
     SaitamaSwiftPR()
   }
 

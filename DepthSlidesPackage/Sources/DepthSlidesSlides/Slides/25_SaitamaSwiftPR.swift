@@ -73,7 +73,7 @@ struct SaitamaSwiftPR: View {
     switch phase {
     case .initial:
       return """
-        最後に宣伝です。11月21日土曜日に、埼玉県初の Japan-\\(region).swift、Saitama.swift をやります。
+        そしてもう一つ、11月21日土曜日に、埼玉県初の Japan-\\(region).swift、Saitama.swift をやります。
         """
     case .second:
       return "会場は所沢市民文化センター ミューズです。"

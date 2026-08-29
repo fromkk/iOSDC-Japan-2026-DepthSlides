@@ -9,6 +9,10 @@ import UniformTypeIdentifiers
 /// パラメーターを調整してボケの見た目を比較するスライド向けView。
 /// 写真読み込み・向き補正のロジックは `DepthModelCompareView` と共通の
 /// `DepthPhotoInput.swift` のヘルパーを再利用する。
+///
+/// 現在スライド本編では使っていない（結果を並べて見せる
+/// `BokehFilterResultGridView` に差し替えた）が、質疑などでその場で
+/// パラメーターを触りたくなったとき用に残してある。
 struct CIFilterBokehCompareView: View {
   @Environment(\.slideTheme) var slideTheme
 
