@@ -10,6 +10,9 @@ iOSDC 登壇資料。複数の深度推定モデルを比較して、iPhoneで�
 
 ## 構成
 
-- `DepthSlides.xcodeproj`: アプリ本体（iOS/macOS）
-- `DepthSlidesPackage`: スライド本体（`DepthSlidesSlides` ターゲット）と Markdown 変換ロジック（`MarkdownToSlide` ターゲット）の Swift Package
-- スライド定義は `DepthSlidesPackage/Sources/DepthSlidesSlides/Slides/` 配下
+- `DepthSlides.xcodeproj`: アプリ本体（iOS/macOS）と、宣伝スライドだけの単体アプリ `EventPR` の2ターゲット
+- `DepthSlides/`: 本体アプリ。Presenter ウィンドウ・外部ディスプレイ・端末間同期・PDF 書き出しを持つ
+- `EventPR/`: 宣伝スライドだけを表示する最小構成のアプリ。スライドをめくる以外の機能は持たない
+- `DepthSlidesPackage`: スライド本体（`DepthSlidesSlides`）、イベント宣伝スライド（`EventPRSlides`）、Markdown 変換ロジック（`MarkdownToSlide`）の Swift Package
+- スライド定義は `DepthSlidesPackage/Sources/DepthSlidesSlides/Slides/` 配下（宣伝パートのみ `Sources/EventPRSlides/Slides/`）
+- 宣伝スライドは両アプリで共有する。`@Slide` マクロが生成するメンバーは public にできないため、スライド型は公開せず `EventPRDeck.slides`（`[any Slide]`）として受け渡し、`SlideIndexController(slides:)` に繋ぐ
