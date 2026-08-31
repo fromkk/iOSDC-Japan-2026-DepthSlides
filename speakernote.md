@@ -248,7 +248,7 @@ Core Image のブラーは 7 種類。役割で分けると 4 グループ
 ^ MaskedVariableBlur は深度マップをそのままボケの強さに使えるので、奥に行くほど連続的にボケが強くなります。
 ^ BokehBlur は円形のボケの縁が明るく残る、レンズに一番近いボケです。
 ^ Zoom と Motion はブレの表現なので、やはり今回の目的には合いません。
-^ 今回はいちばん素直に見えた CIGaussianBlur を選びました。
+^ 今回はその CIBokehBlur を選びました。
 
 ---
 
@@ -258,12 +258,12 @@ Core Image のブラーは 7 種類。役割で分けると 4 グループ
 - 写真に内蔵されている深度情報を取得してみました
 - 配布されているモデルを利用して深度を推定してみました
 - ボケの Filter を比較してみました
-- 今回僕はモデルに **Depth Anything V3 (da3-small)** を選び、フィルターに **CIGaussianBlur** を選びました
+- 今回僕はモデルに **Depth Anything V3 (da3-small)** を選び、フィルターに **CIBokehBlur** を選びました
 
 （TODO: 写真を用意して Before/After を表示する）
 
 ^ まとめです。今日はカメラの歴史と仕組みを振り返り、写真に内蔵されている深度情報を取得し、配布されているモデルで深度を推定して、ボケのフィルターを比較してみました。
-^ その結果、今回僕はモデルに Depth Anything V3 の da3-small を、フィルターに CIGaussianBlur を選びました。
+^ その結果、今回僕はモデルに Depth Anything V3 の da3-small を、フィルターに CIBokehBlur を選びました。
 
 ---
 

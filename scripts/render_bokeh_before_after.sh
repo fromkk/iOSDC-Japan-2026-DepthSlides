@@ -1,6 +1,6 @@
 #!/bin/zsh
 # まとめ前の Before/After 比較スライド用の画像を、スライド本編と同じパイプライン
-# （深度推定 → CIGaussianBlur を深度マスクで合成）で書き出す。
+# （深度推定 → CIBokehBlur を深度マスクで合成）で書き出す。
 # 使い方: scripts/render_bokeh_before_after.sh <入力ディレクトリ> [出力先ディレクトリ]
 #         (既定の出力先: build/bokeh_before_after)
 # 出力: <元ファイル名>_before.png / <元ファイル名>_after.png
