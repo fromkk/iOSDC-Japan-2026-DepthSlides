@@ -15,8 +15,10 @@ struct BokehFilterResultGridView: View {
   @Environment(\.slideTheme) var theme
   @Environment(\.webPageLoadingTracker) private var loadingTracker
 
-  /// 強調表示するフィルター（今回採用したもの）。
-  var highlighted: BokehFilterKind? = .gaussianBlur
+  /// 強調表示するフィルター（今回採用したもの）。`21_BokehFilterResults` は
+  /// まず全7種をフラットに見せ、次のフェーズで採用したものを強調するため、
+  /// フェーズに応じて nil ↔︎ 値 が切り替わる。
+  var highlighted: BokehFilterKind?
 
   /// 深度は写真に埋め込まれていないので推定する。まとめの Before/After
   /// (`BokehBeforeAfterRenderer`) と同じモデルを使う。
@@ -41,12 +43,16 @@ struct BokehFilterResultGridView: View {
     softness: 0
   )
 
+  /// タイルは深度推定＋7フィルターの描画結果なので、一度作ったら使い回す
+  /// （`render()` は初回だけ走る）。強調表示はスライドのフェーズで変わる
+  /// 「見せ方」でしかないため、Tile には焼き込まず body 側で毎回判定する。
+  /// ここに `isHighlighted` を持たせると、フェーズを進めても再描画されない
+  /// 限り強調が切り替わらない。
   struct Tile: Identifiable {
     let id: String
     let title: String
     let caption: String
     let image: CGImage
-    var isHighlighted: Bool = false
   }
 
   @State private var tiles: [Tile] = []
@@ -79,23 +85,27 @@ struct BokehFilterResultGridView: View {
   }
 
   private func tileView(_ tile: Tile) -> some View {
-    VStack(spacing: 4) {
+    // 元画像のタイルの id ("original") はどの BokehFilterKind とも一致しないので、
+    // 強調対象になることはない。
+    let isHighlighted = tile.id == highlighted?.id
+
+    return VStack(spacing: 4) {
       Image(decorative: tile.image, scale: 1)
         .resizable()
         .aspectRatio(contentMode: .fit)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .clipShape(RoundedRectangle(cornerRadius: 8))
         .overlay {
-          if tile.isHighlighted {
+          if isHighlighted {
             RoundedRectangle(cornerRadius: 8)
               .strokeBorder(theme.accentColor, lineWidth: 4)
           }
         }
 
       Text(tile.title)
-        .font(.system(size: 22, weight: tile.isHighlighted ? .bold : .regular))
+        .font(.system(size: 22, weight: isHighlighted ? .bold : .regular))
         .foregroundStyle(
-          tile.isHighlighted ? theme.accentColor : theme.primaryTextColor
+          isHighlighted ? theme.accentColor : theme.primaryTextColor
         )
 
       Text(tile.caption)
@@ -139,7 +149,6 @@ struct BokehFilterResultGridView: View {
       return
     }
 
-    let highlighted = highlighted
     let rendered = await Task.detached(priority: .userInitiated) {
       var results: [Tile] = [
         Tile(id: "original", title: "元画像", caption: "ボケなし", image: original)
@@ -158,8 +167,7 @@ struct BokehFilterResultGridView: View {
             id: kind.id,
             title: kind.displayName,
             caption: Self.caption(for: kind),
-            image: image,
-            isHighlighted: kind == highlighted
+            image: image
           )
         )
       }
@@ -183,7 +191,12 @@ struct BokehFilterResultGridView: View {
   }
 }
 
-#Preview {
+#Preview("強調なし（フェーズ1）") {
   BokehFilterResultGridView()
+    .padding()
+}
+
+#Preview("CIBokehBlur を強調（フェーズ2）") {
+  BokehFilterResultGridView(highlighted: .bokehBlur)
     .padding()
 }

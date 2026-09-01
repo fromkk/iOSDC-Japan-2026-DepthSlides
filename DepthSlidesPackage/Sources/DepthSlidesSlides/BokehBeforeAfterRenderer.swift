@@ -4,7 +4,7 @@ import ImageIO
 import UniformTypeIdentifiers
 
 /// まとめ前の Before/After 比較スライド用に、スライド本編と**同じパイプライン**
-/// （Depth Anything V3 で深度推定 → `CIGaussianBlur` を深度マスクで合成）を
+/// （Depth Anything V3 で深度推定 → `CIBokehBlur` を深度マスクで合成）を
 /// 事前に走らせて after 画像を書き出すためのオフライン処理。
 ///
 /// 本番のスライド上で推論を走らせるとモデルのロードに時間がかかり、失敗した
@@ -29,7 +29,7 @@ public enum BokehBeforeAfterRenderer {
 
   /// スライドで採用したモデル・フィルター。`22_Summary` の記述と揃えること。
   static let model: DepthModel = .depthAnythingV3Small
-  static let filter: BokehFilterKind = .gaussianBlur
+  static let filter: BokehFilterKind = .bokehBlur
 
   /// 書き出す画像の長辺ピクセル数。スライドでは2枚並べて表示するだけなので、
   /// 元画像のフル解像度は不要（アプリのバンドルサイズも抑えたい）。
