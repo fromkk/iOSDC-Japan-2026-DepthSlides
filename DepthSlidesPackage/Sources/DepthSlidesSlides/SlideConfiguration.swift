@@ -41,6 +41,7 @@ public struct SlideConfiguration {
       BokehFilterResults(),
       // 第3幕: 結論
       Summary(),
+      ToneCraftAnnounce(),
       ReferenceBook(),
       DepthOtherUseCases(),
       DepthBackgroundRemovalDemo(),
