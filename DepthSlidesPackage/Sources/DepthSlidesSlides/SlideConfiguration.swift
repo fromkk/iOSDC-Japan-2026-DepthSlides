@@ -23,6 +23,7 @@ public struct SlideConfiguration {
       AnnounceSlide(),
       // 第1幕: なぜ iPhone はボケないか
       CameraObscuraOrigin(),
+      AboutLens(),
       ConvexLensSimulation(),
       FNumber(),
       FNumberDemo(),
