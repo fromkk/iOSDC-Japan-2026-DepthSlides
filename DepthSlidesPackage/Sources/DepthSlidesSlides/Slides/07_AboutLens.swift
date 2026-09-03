@@ -36,8 +36,10 @@ struct AboutLens: View {
             .aspectRatio(contentMode: .fit)
             .frame(width: 600)
 
-          Text("https://www.sigma-global.com/jp/lenses/c021_28_70_28/?tab=construction")
-            .font(theme.bodyFont)
+          Text(
+            "https://www.sigma-global.com/jp/lenses/c021_28_70_28/?tab=construction"
+          )
+          .font(theme.bodyFont)
         }
       }
       .padding(theme.contentPadding)
@@ -54,10 +56,12 @@ struct AboutLens: View {
       """
 
     if phase == .second {
-      markdown.append("""
-        
+      markdown.append(
+        """
+
           - 現代では様々なレンズを組み合わせてできている
-        """)
+        """
+      )
     }
 
     return markdown
@@ -73,6 +77,8 @@ struct AboutLens: View {
     様々な形のレンズが複雑に組み合わさってできていることがわかります。
     """
   }
+
+  var transition: AnyTransition = AnyTransition.awesome
 }
 
 #Preview(".initial") {
