@@ -38,8 +38,8 @@ struct KanagawaSwiftPR: View {
   }
 
   var script: String = """
-    10月31日土曜には、小田原の Hamee さんで Kanagawa.swift #3 があります。
-    神奈川にゆかりのあるアプリ開発者向けの勉強会で、小田原らしいお弁当と懇親会つきです。
+    続いて10月31日土曜には、小田原の Hamee さんで Kanagawa.swift #3 があります。
+    まだ若干名枠があるので興味のある方はご参加ください。
     """
 
   var transition: AnyTransition = AnyTransition.awesome

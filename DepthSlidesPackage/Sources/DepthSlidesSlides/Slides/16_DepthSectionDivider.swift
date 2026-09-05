@@ -22,7 +22,7 @@ struct DepthSectionDivider: View {
   }
 
   var script: String = """
-    まずは深度をどう手に入れるかです。写真にすでに深度が埋め込まれていればそれを使い、無ければ ML モデルで推定します。
+    まずは深度をどう手に入れるかです。今回は写真に埋め込まれている値とMLで推定したものを比較します。
     """
 
   var transition: AnyTransition = AnyTransition.awesome

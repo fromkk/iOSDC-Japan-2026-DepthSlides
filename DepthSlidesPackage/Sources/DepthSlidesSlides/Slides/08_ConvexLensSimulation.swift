@@ -8,7 +8,7 @@ struct ConvexLensSimulation: View {
 
   var body: some View {
     VStack(alignment: .leading, spacing: 24) {
-      Text("レンズのシミュレーション")
+      Text("凸レンズのシミュレーション")
         .font(slideTheme.headingH1Font)
         .foregroundStyle(slideTheme.primaryTextColor)
 
@@ -23,7 +23,7 @@ struct ConvexLensSimulation: View {
   }
 
   var script: String = """
-    針の穴だけのカメラ・オブスキュラは光量が少なくて暗いので、光を集めるためにレンズが使われるようになりました。そのシミュレーションがこちらです。
+    凸レンズのシミュレーションがこちらです。
     レンズの左側が投影する物体、右側がスクリーン（カメラではセンサー）です。
     このオレンジの線が焦点距離です。
     針の穴とは違ってレンズを通すと広い光を一箇所に集めることができるので焦点を作ることができます。

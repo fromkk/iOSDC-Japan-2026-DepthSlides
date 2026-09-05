@@ -85,8 +85,10 @@ struct ExtensionDCPR: View {
   }
 
   var script: String = """
-    ここから宣伝です。まず9月18日金曜の夜と19日土曜に、extension DC 2026 を Day1・Day2 の2日間で開催します。
-    2026年上半期に発表・注目されたトピックを振り返る内容で、どちらも参加費は無料です。
+    ここから宣伝です。まず来週の9月18日金曜の夜と19日土曜に、extension DC 2026 を2日間で開催します。
+    直近のカンファレンスの振り返りや、話したかったけど話せなかったトークを話す場所として用意できればと思っています。
+    登壇枠も参加枠もまだありますので是非ご参加ください。
+    Day 1はLYさん、Day 2はAppleさんのオフィスをお借りします。
     """
 
   var transition: AnyTransition = AnyTransition.awesome

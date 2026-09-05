@@ -23,11 +23,13 @@ public struct SlideConfiguration {
       AnnounceSlide(),
       // 第1幕: なぜ iPhone はボケないか
       CameraObscuraOrigin(),
+      AboutLens(),
       ConvexLensSimulation(),
       FNumber(),
       FNumberDemo(),
       SensorSize(),
       IPhonePhotoProblems(),
+      IPhonePhotoTips(),
       PortraitMode(),
       // 第2幕: 自分で作る（深度を得る → ボカす）
       BokehImprovementApproaches(),

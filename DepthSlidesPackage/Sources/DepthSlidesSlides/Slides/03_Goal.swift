@@ -22,11 +22,6 @@ struct GoalSlide: View {
         labeledPhoto(Image(.SDIM_4295_2), label: "ミラーレスで撮った写真", sublabel: "主題だけが浮き上がる")
       }
       .frame(maxHeight: .infinity)
-
-      Text("iPhone の写真を、後処理でミラーレスのボケに近づける")
-        .font(theme.headingH2Font)
-        .foregroundStyle(theme.primaryTextColor)
-        .frame(maxWidth: .infinity)
     }
     .padding(theme.contentPadding)
   }
@@ -47,8 +42,7 @@ struct GoalSlide: View {
   }
 
   var script: String = """
-    今日のゴールはこれです。左がさっきの iPhone で撮った写真で、これを後処理で、右のミラーレスで撮ったような主題だけが浮き上がる写真に近づけたい、というのが今日のお話です。
-    そのためにまず、なぜ iPhone はボケないのかというところから見ていきます。
+    今日のゴールはこちらです。左がさっきの iPhone で撮った写真で、これを後処理で、右のミラーレスで撮ったような主題だけが浮き上がる写真に近づけたい、というのが今日のお話です。
     """
 
   var transition: AnyTransition = AnyTransition.awesome
