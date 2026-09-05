@@ -41,7 +41,7 @@ enum DepthModel: String, CaseIterable, Identifiable, Hashable {
   }
 
   /// Depth Pro は約1.8GBあり iOS の実行時メモリ上限に抵触するため、macOS でのみ有効にする。
-  /// (18_ModelUsageNotes.swift / note.md 参照)
+  /// (19_ModelUsageNotes.swift / note.md 参照)
   var isAvailableOnCurrentPlatform: Bool {
     switch self {
     case .depthPro:

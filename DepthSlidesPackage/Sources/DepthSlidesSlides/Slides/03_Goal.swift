@@ -22,11 +22,6 @@ struct GoalSlide: View {
         labeledPhoto(Image(.SDIM_4295_2), label: "ミラーレスで撮った写真", sublabel: "主題だけが浮き上がる")
       }
       .frame(maxHeight: .infinity)
-
-      Text("iPhone の写真を、後処理でミラーレスのボケに近づける")
-        .font(theme.headingH2Font)
-        .foregroundStyle(theme.primaryTextColor)
-        .frame(maxWidth: .infinity)
     }
     .padding(theme.contentPadding)
   }
