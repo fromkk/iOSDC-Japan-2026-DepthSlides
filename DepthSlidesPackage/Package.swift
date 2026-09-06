@@ -71,6 +71,8 @@ let package = Package(
         .copy("ApertureSamples"),
         // 同じ場所から iPhone のレンズを切り替えて撮った連番（13_iPhonePhotoTips）
         .copy("TelephotoSamples"),
+        // スライド内で再生する動画（25_ToneCraftAnnounce のアプリ操作画面など）
+        .process("Resources"),
       ]
     ),
     .testTarget(
