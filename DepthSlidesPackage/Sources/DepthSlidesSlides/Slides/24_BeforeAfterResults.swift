@@ -2,7 +2,7 @@ import MarkdownToSlide
 import SlideKit
 import SwiftUI
 
-/// まとめの直後に置く作例。今日の手順（深度を推定して CIBokehBlur をかける）を
+/// まとめの直前に置く作例。今日の手順（深度を推定して CIBokehBlur をかける）を
 /// 通した写真を、元の写真と並べて1組ずつ見せる。
 ///
 /// 左右は同じ幅のカラムに `.fit` で収めるので、ペアの縦横比が同じであれば
@@ -95,7 +95,7 @@ struct BeforeAfterResults: View {
   }
 
   var script: String = """
-    最後に作例です。左が元の写真、右が da3-small で深度を推定して CIBokehBlur をかけたものです。
+    ここまでの方法で実際に処理してみた写真です。左が元の写真、右が da3-small で深度を推定して CIBokehBlur をかけたものです。
     """
 
   var transition: AnyTransition = AnyTransition.awesome
