@@ -68,7 +68,7 @@ struct BeforeAfterResults: View {
       HStack(spacing: 40) {
         column(image: pair.before, label: "Before", caption: "元の写真")
         column(
-          image: pair.after, label: "After", caption: "da3-small → CIBokehBlur ＋ ToneCraft で色味調整")
+          image: pair.after, label: "After", caption: "DA3-SMALL → CIBokehBlur ＋ ToneCraft で色味調整")
       }
       .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
@@ -96,7 +96,7 @@ struct BeforeAfterResults: View {
   }
 
   var script: String = """
-    ここまでの方法で実際に処理してみた写真です。左が元の写真、右が da3-small で深度を推定して CIBokehBlur をかけたものです。
+    ここまでの方法で実際に処理してみた写真です。左が元の写真、右が DA3-SMALL で深度を推定して CIBokehBlur をかけたものです。
     ボケだけでなく色味も変わって見えると思いますが、これは自作しているToneCraftというアプリで編集をしています。
     """
 

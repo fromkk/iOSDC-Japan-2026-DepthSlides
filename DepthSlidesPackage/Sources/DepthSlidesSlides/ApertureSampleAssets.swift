@@ -3,11 +3,11 @@ import Foundation
 import ImageIO
 
 /// `ApertureSamples/` に同梱した「同じ被写体を f値 だけ変えて撮った」実写の連番。
-/// LEICA M11-P + 35mm、f1.4 から f16 までハーフストップ刻みの15枚で、
+/// LEICA M11-P + 35mm、f/1.4 から f/16 までハーフストップ刻みの15枚で、
 /// 09_FNumberDemo のフェーズ2（絞りとボケの関係の実演）で自動再生する。
 ///
 /// f値 は撮影時の実絞りをファイル名で持つ。マニュアルレンズなのでボディ側の
-/// EXIF の F値 は当てにならず、ファイル名が唯一の正確な出典になっている。
+/// EXIF の f値 は当てにならず、ファイル名が唯一の正確な出典になっている。
 enum ApertureSampleAssets {
   struct Sample: Identifiable, Sendable {
     let fNumber: Double

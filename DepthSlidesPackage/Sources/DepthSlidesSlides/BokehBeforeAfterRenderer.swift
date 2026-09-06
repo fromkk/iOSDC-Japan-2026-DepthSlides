@@ -4,7 +4,7 @@ import ImageIO
 import UniformTypeIdentifiers
 
 /// まとめ前の Before/After 比較スライド用に、スライド本編と**同じパイプライン**
-/// （Depth Anything V3 で深度推定 → `CIBokehBlur` を深度マスクで合成）を
+/// （Depth Anything 3 で深度推定 → `CIBokehBlur` を深度マスクで合成）を
 /// 事前に走らせて after 画像を書き出すためのオフライン処理。
 ///
 /// 本番のスライド上で推論を走らせるとモデルのロードに時間がかかり、失敗した

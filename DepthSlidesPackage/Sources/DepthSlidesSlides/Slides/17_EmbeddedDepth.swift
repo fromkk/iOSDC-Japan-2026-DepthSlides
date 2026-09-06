@@ -18,7 +18,7 @@ struct EmbeddedDepth: View {
     VStack(alignment: .leading, spacing: 16) {
       SlideHeader(.embeddedDepth)
 
-      Text("写真に含まれる深度情報を取得")
+      Text("写真に埋め込まれた深度情報を取得")
         .font(theme.headingH2Font)
         .foregroundStyle(theme.primaryTextColor)
 
@@ -92,7 +92,7 @@ struct EmbeddedDepth: View {
     """
 
   var script: String = """
-    まずは写真に含まれる深度情報を取得してみます。ポートレートモードで撮った HEIC には AVDepthData が補助データとして埋め込まれていることがあり、ImageIO 経由でこのように取り出せます。
+    まずは写真に埋め込まれた深度情報を取得してみます。ポートレートモードで撮った HEIC には AVDepthData が補助データとして埋め込まれていることがあり、ImageIO 経由でこのように取り出せます。
     右の写真の仕切りを動かすと、実際に取り出した深度マップが見えます。明るいほど手前です。
     ただしこれはiPhoneのポートレートモードで撮った写真かオブジェクトと背景がいい感じに分離されている写真にしか入っていません。普通に撮った写真や、他社のカメラの写真には深度がないので、そこで ML モデルの出番になります。
     """

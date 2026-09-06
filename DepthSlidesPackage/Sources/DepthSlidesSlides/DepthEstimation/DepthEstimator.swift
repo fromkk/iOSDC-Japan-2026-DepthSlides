@@ -59,7 +59,7 @@ private final class DepthImageCacheStorage: @unchecked Sendable {
 /// 相対深度 / メートル単位の絶対深度など）が異なるため、モデルの種類に応じて
 /// 前処理・後処理を切り替えている。
 ///
-/// NOTE: `depthAnythingV3Small` (da3-small) は `scripts/convert_depth_anything_v3.py`
+/// NOTE: `depthAnythingV3Small` (DA3-SMALL) は `scripts/convert_depth_anything_v3.py`
 /// で変換したモデルの入力名 `"image"` / 出力名 `"depth"` に依存している。
 /// `depthPro` の入出力名・形状は Hugging Face のモデルカード記載の仕様
 /// (`image`, `originalWidth`, `depthMeters`) に基づく。それ以外
@@ -407,7 +407,7 @@ actor DepthEstimator {
     return outputImage
   }
 
-  // MARK: - Depth Anything V3 (5階テンソル入力、手動で ImageNet 正規化が必要)
+  // MARK: - Depth Anything 3 (5階テンソル入力、手動で ImageNet 正規化が必要)
 
   private func runDepthAnythingV3(cgImage: CGImage, model: MLModel) throws -> CGImage {
     guard
@@ -503,7 +503,7 @@ actor DepthEstimator {
   ///   表す場合に `true` を指定する。`EmbeddedDepthExtractor` の AVDepthData 由来の
   ///   視差可視化や、Apple 配布の Depth Anything V2 Small・MiDaS の生スコアは
   ///   視差系（近い=明るい）なので `false` のままでよいが、Depth Pro の
-  ///   `depthMeters`（実測メートル）や Depth Anything V3 の `depth`（点群の
+  ///   `depthMeters`（実測メートル）や Depth Anything 3 の `depth`（点群の
   ///   unprojection に使う実深度）はそのまま min-max 正規化すると近い場所ほど
   ///   暗く写り、他モデルと明暗が反転してしまうため `true` にして反転する。
   private static func normalizedGrayscaleImage(

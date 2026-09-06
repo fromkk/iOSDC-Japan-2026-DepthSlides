@@ -20,7 +20,7 @@ enum DeckSection: CaseIterable {
     case .camera: "カメラの仕組み"
     case .iPhone: "iPhone の写真"
     case .depth: "深度を得る"
-    case .bokeh: "ボカす"
+    case .bokeh: "ぼかす"
     }
   }
 

@@ -1,7 +1,7 @@
 import MarkdownToSlide
 import SwiftUI
 
-/// 「写真 → 深度を得る → ボカす → 結果」のパイプライン図。
+/// 「写真 → 深度を得る → ぼかす → 結果」のパイプライン図。
 /// アプローチ紹介スライドと、各セクションの扉スライドで使い回し、
 /// `highlighted` で「いま話しているステップ」だけを強調する（現在地の提示）。
 struct PipelineDiagramView: View {
@@ -17,7 +17,7 @@ struct PipelineDiagramView: View {
       switch self {
       case .photo: "写真"
       case .depth: "深度を得る"
-      case .blur: "ボカす"
+      case .blur: "ぼかす"
       case .result: "結果"
       }
     }

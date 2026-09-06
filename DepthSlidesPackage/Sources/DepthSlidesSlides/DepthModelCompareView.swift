@@ -376,7 +376,7 @@ struct DepthModelCompareView: View {
     }
 
     if model == .embeddedDepth {
-      statusMessage = "写真に含まれる深度情報を抽出中..."
+      statusMessage = "写真に埋め込まれた深度情報を抽出中..."
       do {
         let result = try await Task.detached(priority: .userInitiated) {
           try EmbeddedDepthExtractor.extractDepthImage(from: imageData)
