@@ -12,6 +12,7 @@ public enum EventPRDeck {
   public static var slides: [any Slide] {
     // 開催が近い順に並べる
     [
+      PR(),
       ExtensionDCPR(),
       KanagawaSwiftPR(),
       SaitamaSwiftPR(),
