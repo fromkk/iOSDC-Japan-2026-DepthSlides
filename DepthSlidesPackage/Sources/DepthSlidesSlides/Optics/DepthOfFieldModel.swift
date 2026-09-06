@@ -21,7 +21,7 @@ struct DepthOfFieldScene: Equatable {
   /// Kept fixed (no slider) so the demo isolates the effect of the
   /// aperture, matching the f-number narrative in `09_FNumber`.
   var focalLength: CGFloat = 60
-  /// f値 = 焦点距離 / 絞りの実直径, i.e. `apertureDiameter = focalLength / fNumber`.
+  /// f値 = 焦点距離 / 絞りの直径, i.e. `apertureDiameter = focalLength / fNumber`.
   var fNumber: CGFloat = 4
   /// 被写体までの距離。スクリーンはこの被写体の結像位置に固定される。
   var focusDistance: CGFloat = 150
@@ -34,7 +34,7 @@ struct DepthOfFieldScene: Equatable {
 
   var lensX: CGFloat { 0 }
 
-  /// 絞りの実直径 (f値 = 焦点距離 / 絞りの実直径 の定義そのまま)。
+  /// 絞りの直径 (f値 = 焦点距離 / 絞りの実直径 の定義そのまま)。
   var apertureDiameter: CGFloat { focalLength / fNumber }
 
   /// Thin lens equation: 1/f = 1/do + 1/di => di = f*do / (do - f).

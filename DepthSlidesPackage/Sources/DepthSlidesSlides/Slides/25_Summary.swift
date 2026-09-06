@@ -8,7 +8,7 @@ struct Summary: View {
 
   private static let recap: [String] = [
     "カメラの歴史と仕組みを振り返る",
-    "写真に内蔵された深度情報を取得する",
+    "写真に埋め込まれた深度情報を取得する",
     "配布されているモデルで深度を推定する",
     "ボケのフィルターを比較する",
   ]
@@ -42,7 +42,7 @@ struct Summary: View {
           eyebrow("今回の選択")
 
           VStack(alignment: .leading, spacing: 48) {
-            choice(label: "モデル", value: "Depth Anything V3\n（da3-small）")
+            choice(label: "モデル", value: "Depth Anything 3\n(DA3-SMALL)")
             choice(label: "フィルター", value: "CIBokehBlur")
           }
         }
@@ -76,8 +76,8 @@ struct Summary: View {
   }
 
   var script: String = """
-    まとめです。今日はカメラの歴史と仕組みを振り返り、写真に内蔵されている深度情報を取得し、配布されているモデルで深度を推定して、ボケのフィルターを比較してみました。
-    その結果、今回僕はモデルに Depth Anything V3 の da3-small を、フィルターに CIBokehBlur を選びました。
+    まとめです。今日はカメラの歴史と仕組みを振り返り、写真に埋め込まれた深度情報を取得し、配布されているモデルで深度を推定して、ボケのフィルターを比較してみました。
+    その結果、今回僕はモデルに Depth Anything 3 の DA3-SMALL を、フィルターに CIBokehBlur を選びました。
     """
 
   var transition: AnyTransition = AnyTransition.awesome

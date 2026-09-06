@@ -10,7 +10,7 @@ enum DepthModel: String, CaseIterable, Identifiable, Hashable {
   /// モデルを持たないため `resourceName`/`packageURL` は nil になる。
   case embeddedDepth
   /// ML モデルはリリースの古い順に並べる（スライド・シミュレーターの表示順に影響）:
-  /// MiDaS (2020) → Depth Anything V2 (2024/6) → Depth Pro (2024/10) → Depth Anything V3 (2025/11)
+  /// MiDaS (2020) → Depth Anything V2 (2024/6) → Depth Pro (2024/10) → Depth Anything 3 (2025/11)
   case midasSmall
   case depthAnythingV2Small
   case depthPro
@@ -20,9 +20,9 @@ enum DepthModel: String, CaseIterable, Identifiable, Hashable {
 
   var displayName: String {
     switch self {
-    case .embeddedDepth: "写真に含まれる深度情報"
+    case .embeddedDepth: "写真に埋め込まれた深度情報"
     case .depthAnythingV2Small: "Depth Anything V2 Small (F16)"
-    case .depthAnythingV3Small: "Depth Anything V3 (da3-small)"
+    case .depthAnythingV3Small: "Depth Anything 3 (DA3-SMALL)"
     case .depthPro: "Depth Pro"
     case .midasSmall: "MiDaS Small"
     }

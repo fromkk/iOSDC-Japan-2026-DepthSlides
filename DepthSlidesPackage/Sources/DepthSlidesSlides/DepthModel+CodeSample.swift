@@ -14,7 +14,7 @@ extension DepthModel {
   /// 意味が重複してしまうため専用の文言にする。
   var codeSectionTitle: String {
     switch self {
-    case .embeddedDepth: "写真に含まれる深度情報を取得"
+    case .embeddedDepth: "写真に埋め込まれた深度情報を取得"
     default: "\(displayName) で深度を取得"
     }
   }

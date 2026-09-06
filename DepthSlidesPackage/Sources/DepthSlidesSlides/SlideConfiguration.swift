@@ -31,7 +31,7 @@ public struct SlideConfiguration {
       IPhonePhotoProblems(),
       IPhonePhotoTips(),
       PortraitMode(),
-      // 第2幕: 自分で作る（深度を得る → ボカす）
+      // 第2幕: 自分で作る（深度を得る → ぼかす）
       BokehImprovementApproaches(),
       DepthSectionDivider(),
       EmbeddedDepth(),

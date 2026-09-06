@@ -136,12 +136,12 @@ struct DepthOfFieldSlideView: View {
     if let farLimit = scene.farLimit {
       Text(
         String(
-          format: "絞り実直径: %.1f / 被写界深度: %.0f 〜 %.0f (幅 %.0f)",
+          format: "絞りの直径: %.1f / 被写界深度: %.0f 〜 %.0f (幅 %.0f)",
           scene.apertureDiameter, scene.nearLimit, farLimit, farLimit - scene.nearLimit))
     } else {
       Text(
         String(
-          format: "絞り実直径: %.1f / 被写界深度: %.0f 〜 無限遠",
+          format: "絞りの直径: %.1f / 被写界深度: %.0f 〜 無限遠",
           scene.apertureDiameter, scene.nearLimit))
     }
   }

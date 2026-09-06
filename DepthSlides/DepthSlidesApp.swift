@@ -21,6 +21,10 @@ struct DepthSlidesApp: App {
       Task { @MainActor in
         await Self.runBokehBeforeAfterRenderIfRequested()
       }
+      // --export-script 指定時は読み上げ用の原稿を書き出して終了する
+      Task { @MainActor in
+        await Self.runScriptExportIfRequested()
+      }
     #endif
   }
   /// macOS Presenter ウィンドウに表示する原稿のフォントサイズ
@@ -101,6 +105,29 @@ struct DepthSlidesApp: App {
         exit(0)
       } catch {
         FileHandle.standardError.write(Data("PDF export failed: \(error)\n".utf8))
+        exit(1)
+      }
+    }
+
+    /// 起動引数 `--export-script <path>` が指定されていたら、全スライドの
+    /// 原稿を読み上げ用テキストに書き出してアプリを終了する
+    /// （scripts/export_speaker_notes.sh）。
+    private static func runScriptExportIfRequested() async {
+      let arguments = CommandLine.arguments
+      guard let flagIndex = arguments.firstIndex(of: "--export-script") else { return }
+      let outputPath =
+        arguments.indices.contains(flagIndex + 1)
+        ? arguments[flagIndex + 1]
+        : "speakernote_tts.txt"
+      let url = URL(fileURLWithPath: outputPath)
+
+      do {
+        try SlideScriptExporter.export(
+          to: url, slideIndexController: configuration.slideIndexController)
+        FileHandle.standardError.write(Data("[ScriptExport] wrote \(url.path)\n".utf8))
+        exit(0)
+      } catch {
+        FileHandle.standardError.write(Data("[ScriptExport] failed: \(error)\n".utf8))
         exit(1)
       }
     }

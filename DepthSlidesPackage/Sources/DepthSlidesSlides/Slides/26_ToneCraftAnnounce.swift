@@ -2,7 +2,7 @@ import EventPRSlides
 import SlideKit
 import SwiftUI
 
-/// まとめの直後に置くアプリ告知。今日話した「深度を推定してボカす」が、
+/// まとめの直後に置くアプリ告知。今日話した「深度を推定してぼかす」が、
 /// 自作アプリ ToneCraft の「フォーカスぼかし」として実際に触れることを伝える。
 /// QR は URL から `QRCodeGenerator` で生成するので画像アセットは持たない。
 @Slide
