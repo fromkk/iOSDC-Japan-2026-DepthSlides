@@ -21,8 +21,8 @@ struct FNumberDemo: View {
 
       Text(
         phase == .initial
-          ? "絞りを開ける（f値 小）ほど、ピントが合う範囲＝緑の帯が狭くなる"
-          : "同じ被写体を f値 だけ変えて撮ると、ボケはこう変わる"
+          ? "絞りを開ける（f値 小）ほど、ピントが合う範囲を示す緑の帯が狭くなる"
+          : "同じ被写体を f値 だけ変えて撮影"
       )
       .font(slideTheme.headingH3Font)
       .foregroundStyle(slideTheme.accentColor)

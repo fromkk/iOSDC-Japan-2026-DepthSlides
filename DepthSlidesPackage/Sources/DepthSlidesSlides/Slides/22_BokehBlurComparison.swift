@@ -15,13 +15,9 @@ struct BokehBlurComparison: View {
         Core Image のブラーは 7 種類。役割で分けると 4 グループ
 
         - 一様にぼかす: **CIBoxBlur** / **CIDiscBlur** / **CIGaussianBlur**
-          - 範囲の形（正方形・円・ガウス分布）が違うだけ。深度マスクで合成して使う
         - 場所ごとに強さを変える: **CIMaskedVariableBlur**
-          - 深度マップをそのままマスクにできる
         - レンズ風: **CIBokehBlur**
-          - 円形のボケにリング状の強調（ringSize / ringAmount）と softness
         - 演出寄り: CIZoomBlur / CIMotionBlur
-          - ブレの表現なので今回の目的には合わない
         """
       )
     }

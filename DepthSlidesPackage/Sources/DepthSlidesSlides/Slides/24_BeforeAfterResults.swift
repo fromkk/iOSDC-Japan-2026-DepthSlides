@@ -32,11 +32,11 @@ struct BeforeAfterResults: View {
   /// 締めに持ってきている。
   private static let pairs: [ResultPair] = [
     ResultPair(before: .result01Before, after: .result01After),
+    ResultPair(before: .result06Before, after: .result06After),
     ResultPair(before: .result02Before, after: .result02After),
     ResultPair(before: .result03Before, after: .result03After),
     ResultPair(before: .result04Before, after: .result04After),
     ResultPair(before: .result05Before, after: .result05After),
-    ResultPair(before: .result06Before, after: .result06After),
     ResultPair(before: .result07Before, after: .result07After),
   ]
 
@@ -67,7 +67,8 @@ struct BeforeAfterResults: View {
       // ペアの間が大きく空いて見比べにくくなる。
       HStack(spacing: 40) {
         column(image: pair.before, label: "Before", caption: "元の写真")
-        column(image: pair.after, label: "After", caption: "da3-small → CIBokehBlur")
+        column(
+          image: pair.after, label: "After", caption: "da3-small → CIBokehBlur ＋ ToneCraft で色味調整")
       }
       .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
@@ -96,6 +97,7 @@ struct BeforeAfterResults: View {
 
   var script: String = """
     ここまでの方法で実際に処理してみた写真です。左が元の写真、右が da3-small で深度を推定して CIBokehBlur をかけたものです。
+    ボケだけでなく色味も変わって見えると思いますが、これは自作しているToneCraftというアプリで編集をしています。
     """
 
   var transition: AnyTransition = AnyTransition.awesome

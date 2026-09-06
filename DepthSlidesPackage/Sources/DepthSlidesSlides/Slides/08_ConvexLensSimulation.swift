@@ -12,7 +12,7 @@ struct ConvexLensSimulation: View {
         .font(slideTheme.headingH1Font)
         .foregroundStyle(slideTheme.primaryTextColor)
 
-      Text("レンズは光を一点に集める。集まる位置とスクリーンがずれると像がにじむ ＝ ボケ")
+      Text("レンズは光を一点に集める。集まる位置とスクリーンがずれると像がにじんでボケになる")
         .font(slideTheme.headingH3Font)
         .foregroundStyle(slideTheme.accentColor)
 
