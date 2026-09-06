@@ -14,6 +14,16 @@ struct ToneCraftAnnounce: View {
   /// アイコンの落とす影に使う、ToneCraft のアクセントカラー（ライト）
   private let accentShadow = Color(red: 201 / 255, green: 137 / 255, blue: 122 / 255)
 
+  /// フォーカスぼかしを操作している画面収録。静止画より伝わるのでループ再生する。
+  private let videoURL: URL? = Bundle.module.url(
+    forResource: "tone_craft_focus_blur",
+    withExtension: "mp4"
+  )
+
+  /// 画面収録の縦横比。ステータスバーを切り落としてあり、下に敷く
+  /// `toneCraftShot`（920 x 1865）とほぼ同じ比率になっている。
+  private static let shotAspectRatio: CGFloat = 720.0 / 1462.0
+
   var body: some View {
     HStack(alignment: .center, spacing: 80) {
       VStack(alignment: .leading, spacing: 0) {
@@ -76,12 +86,23 @@ struct ToneCraftAnnounce: View {
       }
       .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
 
-      Image(.toneCraftShot)
-        .resizable()
-        .aspectRatio(contentMode: .fit)
-        .frame(width: 460)
-        .clipShape(RoundedRectangle(cornerRadius: 46))
-        .shadow(color: .black.opacity(0.28), radius: 36, y: 32)
+      ZStack {
+        // PDF 書き出しや動画の読み込み前は AVPlayerLayer が何も描かないので、
+        // 静止画のスクリーンショットを下に敷いておく。
+        Image(.toneCraftShot)
+          .resizable()
+          .aspectRatio(contentMode: .fill)
+
+        if let videoURL {
+          LoopingVideoView(url: videoURL)
+        }
+      }
+      .aspectRatio(Self.shotAspectRatio, contentMode: .fit)
+      .padding(.top, 32)
+      .background(Color.black)
+      .frame(maxWidth: 460)
+      .clipShape(RoundedRectangle(cornerRadius: 46))
+      .shadow(color: .black.opacity(0.28), radius: 36, y: 32)
     }
     .padding(theme.contentPadding)
     .frame(maxWidth: .infinity, maxHeight: .infinity)
