@@ -27,7 +27,7 @@ struct AnnounceSlide: View {
         case .second:
           Text("⚠️")
             .font(slideTheme.headingH1Font)
-          Text("発表の中で写真を撮影するタイミングがあります。せっかくなのでボーズとかしてもらえると嬉しいです✌🏻")
+          Text("発表の中で写真を撮影するタイミングがあります。せっかくなのでポーズとかしてもらえると嬉しいです✌🏻")
             .font(slideTheme.headingH2Font)
             .multilineTextAlignment(.center)
         case .third:
