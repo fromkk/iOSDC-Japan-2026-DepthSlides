@@ -27,7 +27,7 @@ struct AnnounceSlide: View {
         case .second:
           Text("⚠️")
             .font(slideTheme.headingH1Font)
-          Text("発表の中で写真を撮影するタイミングがあります。せっかくなのでピースとかしてもらえると嬉しいです✌🏻")
+          Text("発表の中で写真を撮影するタイミングがあります。せっかくなのでボーズとかしてもらえると嬉しいです✌🏻")
             .font(slideTheme.headingH2Font)
             .multilineTextAlignment(.center)
         case .third:
@@ -65,7 +65,7 @@ struct AnnounceSlide: View {
 
   var script: String {
     if phase == .second {
-      return "発表の中で写真を撮影するタイミングがあります。せっかくなのでピースとかしてもらえると嬉しいです✌🏻"
+      return "発表の中で写真を撮影するタイミングがあります。せっかくなのでポーズとかしてもらえると嬉しいです✌🏻"
     } else {
       return ""
     }
