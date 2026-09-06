@@ -8,30 +8,32 @@ struct SensorSize: View {
   let converter = MarkdownToSlideConverter()
 
   var body: some View {
-    HStack(alignment: .top, spacing: 32) {
-      SlideWrapper {
-        converter.convertPage(
-          """
-          # センサーサイズ
+    HeaderedSlide(.sensorSize) {
+      HStack(alignment: .top, spacing: 32) {
+        SlideWrapper {
+          converter.convertPage(
+            """
+            ## センサーサイズ
 
-          - センサーが大きいほど
-            - たくさんの光を受け取れる
-            - **被写界深度が浅くなる（ボケやすい）**
-          - iPhone 17 Pro の最大センサーは 1/1.28型
-            - 面積はフルサイズの約 **1/\(SensorSizeDiagramView.fullFrameToiPhoneAreaRatio)**
-          """
-        )
-      }
+            - センサーが大きいほど
+              - たくさんの光を受け取れる
+              - **被写界深度が浅くなる（ボケやすい）**
+            - iPhone 17 Pro の最大センサーは 1/1.28型
+              - 面積はフルサイズの約 **1/\(SensorSizeDiagramView.fullFrameToiPhoneAreaRatio)**
+            """
+          )
+        }
 
-      VStack(alignment: .leading, spacing: 8) {
-        SensorSizeDiagramView()
-        Text("実寸比（mm）")
-          .font(slideTheme.bodyFont)
-          .foregroundStyle(slideTheme.secondaryTextColor)
+        VStack(alignment: .leading, spacing: 8) {
+          SensorSizeDiagramView()
+          Text("実寸比（mm）")
+            .font(slideTheme.bodyFont)
+            .foregroundStyle(slideTheme.secondaryTextColor)
+        }
+        .frame(width: 880)
+        .padding(.trailing, slideTheme.contentPadding)
+        .padding(.vertical, slideTheme.contentPadding)
       }
-      .frame(width: 880)
-      .padding(.trailing, slideTheme.contentPadding)
-      .padding(.vertical, slideTheme.contentPadding)
     }
   }
 

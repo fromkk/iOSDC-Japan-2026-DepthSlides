@@ -7,19 +7,21 @@ struct BokehBlurComparison: View {
   let converter = MarkdownToSlideConverter()
 
   var body: some View {
-    SlideWrapper {
-      converter.convertPage(
-        """
-        # 様々なボケを試して最適なものを選ぶ
+    HeaderedSlide(.bokehBlurComparison) {
+      SlideWrapper {
+        converter.convertPage(
+          """
+          ## 様々なボケを試して最適なものを選ぶ
 
-        Core Image のブラーは 7 種類。役割で分けると 4 グループ
+          Core Image のブラーは 7 種類。役割で分けると 4 グループ
 
-        - 一様にぼかす: **CIBoxBlur** / **CIDiscBlur** / **CIGaussianBlur**
-        - 場所ごとに強さを変える: **CIMaskedVariableBlur**
-        - レンズ風: **CIBokehBlur**
-        - 演出寄り: CIZoomBlur / CIMotionBlur
-        """
-      )
+          - 一様にぼかす: **CIBoxBlur** / **CIDiscBlur** / **CIGaussianBlur**
+          - 場所ごとに強さを変える: **CIMaskedVariableBlur**
+          - レンズ風: **CIBokehBlur**
+          - 演出寄り: CIZoomBlur / CIMotionBlur
+          """
+        )
+      }
     }
   }
 

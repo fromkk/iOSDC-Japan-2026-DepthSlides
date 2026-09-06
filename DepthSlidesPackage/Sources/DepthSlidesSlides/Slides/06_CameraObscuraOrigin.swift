@@ -10,39 +10,54 @@ struct CameraObscuraOrigin: View {
   }
 
   @Phase var phase: SlidePhase
+  @Environment(\.slideTheme) var theme
+
+  private var title: String {
+    switch phase {
+    case .initial: "カメラの元祖"
+    case .second: "Camera Obscura"
+    }
+  }
+
+  private var image: ImageResource {
+    switch phase {
+    case .initial: .cameraObscura
+    case .second: .cameraObscura2
+    }
+  }
+
+  private var source: String {
+    switch phase {
+    case .initial:
+      "https://commons.wikimedia.org/wiki/File:1646_Athanasius_Kircher_-_Camera_obscura.jpg"
+    case .second:
+      "https://commons.wikimedia.org/wiki/File:Camera_Obscura_box18thCentury.jpg"
+    }
+  }
 
   var body: some View {
-    Group {
-      switch phase {
-      case .initial:
-        HeaderSlide("カメラの元祖") {
-          Spacer()
-          Text(
-            "出典: https://commons.wikimedia.org/wiki/File:1646_Athanasius_Kircher_-_Camera_obscura.jpg"
-          )
-          .font(.system(size: 32))
-        }
-        .background {
-          Image(.cameraObscura)
-            .resizable()
-            .aspectRatio(contentMode: .fit)
-            .padding(.bottom, 120)
-        }
-      case .second:
-        HeaderSlide("Camera Obscura") {
-          Spacer()
-          Text(
-            "出典: https://commons.wikimedia.org/wiki/File:Camera_Obscura_box18thCentury.jpg"
-          )
-          .font(.system(size: 32))
-        }
-        .background {
-          Image(.cameraObscura2)
-            .resizable()
-            .aspectRatio(contentMode: .fit)
-        }
-      }
+    // 以前は SlideKit の `HeaderSlide` にフルブリードの `.background` で画像を
+    // 重ねていたが、タイトルが画像の下に隠れて読めなくなっていた。画像は背景では
+    // なく本文として置き、他のスライドと同じヘッダーを載せている。
+    VStack(alignment: .leading, spacing: 24) {
+      SlideHeader(.cameraObscuraOrigin)
+
+      Text(title)
+        .font(theme.headingH2Font)
+        .foregroundStyle(theme.primaryTextColor)
+
+      Image(image)
+        .resizable()
+        .aspectRatio(contentMode: .fit)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+      // 生 URL は長いので、リンク色ではなく本文の副次色で小さく置く。
+      Text(verbatim: "出典: \(source)")
+        .font(.system(size: 26))
+        .foregroundStyle(theme.secondaryTextColor)
     }
+    .padding(theme.contentPadding)
+    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
   }
 
   var script: String {

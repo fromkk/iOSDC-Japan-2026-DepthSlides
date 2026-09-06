@@ -15,8 +15,10 @@ struct FNumberDemo: View {
 
   var body: some View {
     VStack(alignment: .leading, spacing: 24) {
+      SlideHeader(.fNumberDemo)
+
       Text("被写界深度")
-        .font(slideTheme.headingH1Font)
+        .font(slideTheme.headingH2Font)
         .foregroundStyle(slideTheme.primaryTextColor)
 
       Text(

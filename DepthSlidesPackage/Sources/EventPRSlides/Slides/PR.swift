@@ -16,6 +16,8 @@ public struct PR: View {
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
   }
+
+  var transition: AnyTransition = AnyTransition.awesome
 }
 
 #Preview {

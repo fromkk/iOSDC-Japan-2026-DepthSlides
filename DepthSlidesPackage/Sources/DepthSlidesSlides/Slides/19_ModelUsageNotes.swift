@@ -4,22 +4,31 @@ import SwiftUI
 
 @Slide
 struct ModelUsageNotes: View {
-  let converter = MarkdownToSlideConverter()
+  @Environment(\.slideTheme) var theme
+
+  /// 補足は 2 列（1 列 856pt）で 1 行に収まる長さにしてある。伸ばすと 2 行に割れて
+  /// 項目ごとの高さが揃わなくなる。詳細は `script` 側で喋る。
+  private static let points: [SlidePoint] = [
+    SlidePoint("Core ML / Core AI 用に変換が必要", "Core AI は Core ML の後継（Xcode 27 / iOS 20 SDK）"),
+    SlidePoint("モデルのサイズが大きい", "アプリに同梱するぶん、アプリのサイズも増える"),
+    SlidePoint("Depth Pro は Mac 並みの性能が要る", "とくにメモリを要求する"),
+    SlidePoint("ライセンスがモデルごとに違う", "同じモデルでもサイズによって商用可否が変わる"),
+  ]
 
   var body: some View {
-    SlideWrapper {
-      converter.convertPage(
-        """
-        # 配布されているモデルを利用する際の注意点
+    VStack(alignment: .leading, spacing: 40) {
+      SlideHeader(.modelUsageNotes)
 
-        - それぞれ Core ML / Core AI で利用するために変換が必要
-          - Core AI は WWDC26 で発表された Core ML の後継フレームワーク（Xcode 27 / iOS 20 SDK）
-        - モデルのサイズが大きい（アプリに同梱するのでアプリのサイズも大きくなる）
-        - Depth Pro は Mac 並みの性能（メモリ）が必要
-        - モデル自体やそれぞれのサイズによってライセンスが異なる
-        """
-      )
+      Text("配布されているモデルを利用する際の注意点")
+        .font(theme.headingH2Font)
+        .foregroundStyle(theme.primaryTextColor)
+
+      SlidePointList(points: Self.points, columns: 2)
+
+      Spacer(minLength: 0)
     }
+    .padding(theme.contentPadding)
+    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
   }
 
   var script: String = """
