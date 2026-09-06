@@ -42,8 +42,8 @@ public struct SlideConfiguration {
       BokehBlurComparison(),
       BokehFilterResults(),
       // 第3幕: 結論
-      Summary(),
       BeforeAfterResults(),
+      Summary(),
       ToneCraftAnnounce(),
       ReferenceBook(),
       DepthOtherUseCases(),
