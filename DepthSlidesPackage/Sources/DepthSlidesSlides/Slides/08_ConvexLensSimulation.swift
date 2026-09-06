@@ -8,8 +8,10 @@ struct ConvexLensSimulation: View {
 
   var body: some View {
     VStack(alignment: .leading, spacing: 24) {
+      SlideHeader(.convexLensSimulation)
+
       Text("凸レンズのシミュレーション")
-        .font(slideTheme.headingH1Font)
+        .font(slideTheme.headingH2Font)
         .foregroundStyle(slideTheme.primaryTextColor)
 
       Text("レンズは光を一点に集める。集まる位置とスクリーンがずれると像がにじんでボケになる")

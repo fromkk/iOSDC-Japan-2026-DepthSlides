@@ -15,34 +15,36 @@ struct AboutLens: View {
   @Phase var phase: SlidePhase
 
   var body: some View {
-    HStack {
-      SlideWrapper {
-        converter.convertPage(markdown)
-      }
-
-      VStack {
-        switch phase {
-        case .initial:
-          Image(.bunbouguMushimegane)
-            .resizable()
-            .aspectRatio(contentMode: .fit)
-            .frame(width: 600)
-
-          Text("https://www.irasutoya.com/2013/03/blog-post_385.html")
-            .font(theme.bodyFont)
-        case .second:
-          Image(.sigmaLens)
-            .resizable()
-            .aspectRatio(contentMode: .fit)
-            .frame(width: 600)
-
-          Text(
-            "https://www.sigma-global.com/jp/lenses/c021_28_70_28/?tab=construction"
-          )
-          .font(theme.bodyFont)
+    HeaderedSlide(.aboutLens) {
+      HStack {
+        SlideWrapper {
+          converter.convertPage(markdown)
         }
+
+        VStack {
+          switch phase {
+          case .initial:
+            Image(.bunbouguMushimegane)
+              .resizable()
+              .aspectRatio(contentMode: .fit)
+              .frame(width: 600)
+
+            Text("https://www.irasutoya.com/2013/03/blog-post_385.html")
+              .font(theme.bodyFont)
+          case .second:
+            Image(.sigmaLens)
+              .resizable()
+              .aspectRatio(contentMode: .fit)
+              .frame(width: 600)
+
+            Text(
+              "https://www.sigma-global.com/jp/lenses/c021_28_70_28/?tab=construction"
+            )
+            .font(theme.bodyFont)
+          }
+        }
+        .padding(theme.contentPadding)
       }
-      .padding(theme.contentPadding)
     }
   }
 

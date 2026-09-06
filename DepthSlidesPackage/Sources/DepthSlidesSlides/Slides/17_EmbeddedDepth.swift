@@ -16,8 +16,10 @@ struct EmbeddedDepth: View {
 
   var body: some View {
     VStack(alignment: .leading, spacing: 16) {
+      SlideHeader(.embeddedDepth)
+
       Text("写真に含まれる深度情報を取得")
-        .font(theme.headingH1Font)
+        .font(theme.headingH2Font)
         .foregroundStyle(theme.primaryTextColor)
 
       HStack(alignment: .top, spacing: 32) {

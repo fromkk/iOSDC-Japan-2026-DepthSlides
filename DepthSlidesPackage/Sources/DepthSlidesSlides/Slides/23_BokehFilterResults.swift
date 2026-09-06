@@ -18,7 +18,9 @@ struct BokehFilterResults: View {
 
   var body: some View {
     ScrollView {
-      VStack(alignment: .leading, spacing: 12) {
+      VStack(alignment: .leading, spacing: 20) {
+        SlideHeader(.bokehFilterResults)
+
         Text("フィルターごとのボケの違い")
           .font(theme.headingH3Font)
           .foregroundStyle(theme.primaryTextColor)

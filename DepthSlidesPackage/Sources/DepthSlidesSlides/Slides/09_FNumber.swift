@@ -7,17 +7,19 @@ struct FNumber: View {
   let converter = MarkdownToSlideConverter()
 
   var body: some View {
-    SlideWrapper {
-      converter.convertPage(
-        """
-        # f値
+    HeaderedSlide(.fNumber) {
+      SlideWrapper {
+        converter.convertPage(
+          """
+          # f値
 
-        - レンズだけだと光が多すぎて、にじみや収差が出て、被写界深度も浅くなりすぎる
-        - **絞り**で入る光を制限すると、被写界深度が深くなりピントが合わせやすくなる
-        - f値 = 焦点距離 ÷ 絞りの実直径
-          - **小さいほど開いている（ボケる）**、大きいほど絞っている（ボケない）
-        """
-      )
+          - レンズだけだと光が多すぎて、にじみや収差が出て、被写界深度も浅くなりすぎる
+          - **絞り**で入る光を制限すると、被写界深度が深くなりピントが合わせやすくなる
+          - f値 = 焦点距離 ÷ 絞りの実直径
+            - **小さいほど開いている（ボケる）**、大きいほど絞っている（ボケない）
+          """
+        )
+      }
     }
   }
 

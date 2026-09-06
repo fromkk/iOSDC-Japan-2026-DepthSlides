@@ -18,8 +18,10 @@ struct ModelComparison: View {
   let converter = MarkdownToSlideConverter()
 
   var body: some View {
-    SlideWrapper {
-      converter.convertPage(markdown)
+    HeaderedSlide(.modelComparison) {
+      SlideWrapper {
+        converter.convertPage(markdown)
+      }
     }
   }
 
@@ -27,13 +29,13 @@ struct ModelComparison: View {
     switch phase {
     case .initial:
       return """
-        # 配布されている ML モデルを利用して深度を推定する
+        ## 配布されている ML モデルを利用して深度を推定する
 
         \(DepthModel.mlModelCases.map { "- \($0.displayName)" }.joined(separator: "\n"))
         """
     case .spec:
       return """
-        # スペック比較
+        ## スペック比較
 
         \(specTable)
 
@@ -41,7 +43,7 @@ struct ModelComparison: View {
         """
     case .depthType:
       return """
-        # 深度の種類
+        ## 深度の種類
 
         | | MiDaS Small | DA V2 Small | Depth Pro | DA3 Small |
         |---|---|---|---|---|
@@ -54,7 +56,7 @@ struct ModelComparison: View {
         """
     case .license:
       return """
-        # ライセンス
+        ## ライセンス
 
         | | MiDaS Small | DA V2 Small | Depth Pro | DA3 Small |
         |---|---|---|---|---|

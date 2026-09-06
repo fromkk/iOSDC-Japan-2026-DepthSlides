@@ -9,8 +9,10 @@ struct DepthModelSimulator: View {
 
   var body: some View {
     VStack {
+      SlideHeader(.depthModelSimulator)
+
       Text("モデル比較シミュレーター")
-        .font(theme.headingH1Font)
+        .font(theme.headingH2Font)
         .foregroundStyle(theme.primaryTextColor)
         .frame(maxWidth: .infinity, alignment: .leading)
 

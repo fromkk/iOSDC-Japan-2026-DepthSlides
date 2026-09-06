@@ -16,35 +16,37 @@ struct PortraitMode: View {
   let converter = MarkdownToSlideConverter()
 
   var body: some View {
-    HStack {
-      SlideWrapper {
-        converter.convertPage(
-          """
-          # ポートレートモード
+    HeaderedSlide(.portraitMode) {
+      HStack {
+        SlideWrapper {
+          converter.convertPage(
+            """
+            ## ポートレートモード
 
-          - 2016年10月配信の iOS 10.1 で初登場（iPhone 7 Plus）
-          - 当初はデュアルカメラの視差から深度を推定して、撮影したい対象以外のボケを生成
-          - iPhone 12 Pro 以降は LiDAR スキャナも活用され、深度の精度が向上
-          - 当初はポートレートモードにわざわざ変更する必要があった
-            - 最近は普通に撮影して後で f値 を変更することも可能
-          - 撮影した写真によってはボケに違和感があることも
-          """
-        )
-      }
+            - 2016年10月配信の iOS 10.1 で初登場（iPhone 7 Plus）
+            - 当初はデュアルカメラの視差から深度を推定して、撮影したい対象以外のボケを生成
+            - iPhone 12 Pro 以降は LiDAR スキャナも活用され、深度の精度が向上
+            - 当初はポートレートモードにわざわざ変更する必要があった
+              - 最近は普通に撮影して後で f値 を変更することも可能
+            - 撮影した写真によってはボケに違和感があることも
+            """
+          )
+        }
 
-      switch phase {
-      case .initial:
-        Image(.IMG_2581)
-          .resizable()
-          .aspectRatio(contentMode: .fit)
-          .frame(width: 600)
-          .padding(.trailing, slideTheme.contentPadding)
-      case .second:
-        Image(.IMG_1606)
-          .resizable()
-          .aspectRatio(contentMode: .fit)
-          .frame(width: 600)
-          .padding(.trailing, slideTheme.contentPadding)
+        switch phase {
+        case .initial:
+          Image(.IMG_2581)
+            .resizable()
+            .aspectRatio(contentMode: .fit)
+            .frame(width: 600)
+            .padding(.trailing, slideTheme.contentPadding)
+        case .second:
+          Image(.IMG_1606)
+            .resizable()
+            .aspectRatio(contentMode: .fit)
+            .frame(width: 600)
+            .padding(.trailing, slideTheme.contentPadding)
+        }
       }
     }
   }
