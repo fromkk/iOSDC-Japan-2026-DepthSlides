@@ -64,34 +64,11 @@ struct DepthModelCompareView: View {
 
   var body: some View {
     VStack(spacing: 16) {
-      ZStack(alignment: .topTrailing) {
+      ZStack {
         RoundedRectangle(cornerRadius: 12)
           .fill(.black.opacity(0.03))
 
         contentView
-
-        // 他のボタンと並べた行の中だと押しにくいという指摘を受け、コーナーに
-        // 独立したフローティングボタンとして配置している（SlideNavigationView の
-        // 「Export PDF」ボタンと同じ見た目・置き方）。
-        #if os(iOS)
-          Button {
-            isPeerCaptureCameraPresented = true
-          } label: {
-            Image(systemName: "camera.badge.ellipsis")
-              .font(.system(size: 20))
-          }
-          .buttonStyle(.glass)
-          .padding(12)
-        #elseif os(macOS)
-          Button {
-            isPeerReceiverPresented = true
-          } label: {
-            Image(systemName: "iphone.and.arrow.forward")
-              .font(.system(size: 20))
-          }
-          .buttonStyle(.glass)
-          .padding(12)
-        #endif
       }
       .frame(maxWidth: .infinity, maxHeight: .infinity)
 
@@ -115,19 +92,38 @@ struct DepthModelCompareView: View {
       }
       .pickerStyle(.segmented)
 
-      HStack(spacing: 12) {
+      // 素のラベルだけだと当たり判定が文字の幅しかなく、スライド表示で縮小される
+      // と押しにくかったため、横幅いっぱいの大きな枠付きボタンにしている。
+      // 以前は写真エリア右上に小さなフローティングボタンとして置いていた
+      // iPhone 撮影／受信のボタンも、同じ理由でこの列にまとめた。
+      HStack(spacing: 16) {
         PhotosPicker(selection: $pickerItem, matching: .images) {
-          Label("写真ライブラリから選択", systemImage: "photo.badge.plus")
-            .font(.system(size: 22))
+          pickerButtonLabel("写真ライブラリから選択", systemImage: "photo.badge.plus")
         }
 
         Button {
           isFileImporterPresented = true
         } label: {
-          Label("ファイルから選択", systemImage: "folder.badge.plus")
-            .font(.system(size: 22))
+          pickerButtonLabel("ファイルから選択", systemImage: "folder.badge.plus")
         }
+
+        #if os(iOS)
+          Button {
+            isPeerCaptureCameraPresented = true
+          } label: {
+            pickerButtonLabel("このiPhoneで撮影", systemImage: "camera.badge.ellipsis")
+          }
+        #elseif os(macOS)
+          Button {
+            isPeerReceiverPresented = true
+          } label: {
+            pickerButtonLabel("iPhoneから受信", systemImage: "iphone.and.arrow.forward")
+          }
+        #endif
       }
+      .buttonStyle(.bordered)
+      .controlSize(.extraLarge)
+      .tint(slideTheme.primaryTextColor)
     }
     .fileImporter(
       isPresented: $isFileImporterPresented,
@@ -159,10 +155,20 @@ struct DepthModelCompareView: View {
         }
       }
     #elseif os(macOS)
-      .sheet(isPresented: $isPeerReceiverPresented) {
-        PeerCaptureReceiverView { data in
-          isPeerReceiverPresented = false
-          Task { await loadImage(from: data) }
+      // sheet だとウィンドウサイズに関係なく小さな窓（480×360 程度）になり、
+      // 会場のスクリーンでは iPhone のライブプレビューが豆粒にしか見えなかった。
+      // スライド本体の上に重ねる形にして、スライド領域いっぱいに表示する。
+      .overlay {
+        if isPeerReceiverPresented {
+          PeerCaptureReceiverView(
+            onReceived: { data in
+              isPeerReceiverPresented = false
+              Task { await loadImage(from: data) }
+            },
+            onClose: { isPeerReceiverPresented = false }
+          )
+          .background(slideTheme.backgroundColor)
+          .clipShape(RoundedRectangle(cornerRadius: 12))
         }
       }
     #endif
@@ -224,6 +230,15 @@ struct DepthModelCompareView: View {
         converter.convertPage(codeMarkdown)
       }
     }
+  }
+
+  /// 写真選択ボタンの中身。`contentShape` を含めてボタン全体を押せる領域にする。
+  nonisolated private func pickerButtonLabel(_ title: String, systemImage: String) -> some View {
+    Label(title, systemImage: systemImage)
+      .font(.system(size: 26, weight: .semibold))
+      .frame(maxWidth: .infinity)
+      .padding(.vertical, 12)
+      .contentShape(Rectangle())
   }
 
   private var statusText: some View {

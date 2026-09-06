@@ -4,10 +4,14 @@
 
   /// Mac側: iPhoneからの受信待ち状態を表示する。受信できたら
   /// `onReceived`クロージャ経由で`DepthModelCompareView`へDataを渡す。
+  ///
+  /// sheet ではなくスライドの上に重ねて表示する（スライド座標系で 1920×1080 に
+  /// 拡縮されるため、文字サイズはスライド内の他の要素と同じ尺度で指定する）。
+  /// 閉じる操作は `onClose` で親に返し、表示状態は親が持つ。
   struct PeerCaptureReceiverView: View {
     var onReceived: (Data) -> Void
+    var onClose: () -> Void
 
-    @Environment(\.dismiss) private var dismiss
     @Environment(\.presentationSyncCoordinator) private var syncCoordinator
     @State private var receiver = PeerCaptureReceiver()
 
@@ -21,7 +25,7 @@
         if let frameData = syncCoordinator?.latestPreviewFrameData,
           let nsImage = NSImage(data: frameData)
         {
-          Color.black.ignoresSafeArea()
+          Color.black
           Image(nsImage: nsImage)
             .resizable()
             .aspectRatio(contentMode: .fit)
@@ -32,9 +36,10 @@
             statusOverlay
           }
         } else {
-          VStack(spacing: 20) {
+          VStack(spacing: 28) {
             statusBody
           }
+          .font(.system(size: 28))
           .padding(40)
         }
 
@@ -43,19 +48,19 @@
             Spacer()
             Button {
               receiver.stop()
-              dismiss()
+              onClose()
             } label: {
               Image(systemName: "xmark.circle.fill")
-                .font(.system(size: 28))
+                .font(.system(size: 44))
                 .foregroundStyle(syncCoordinator?.latestPreviewFrameData != nil ? .white : .primary)
             }
             .buttonStyle(.plain)
-            .padding()
+            .padding(20)
           }
           Spacer()
         }
       }
-      .frame(minWidth: 480, minHeight: 360)
+      .frame(maxWidth: .infinity, maxHeight: .infinity)
       .task {
         receiver.start()
       }
@@ -63,7 +68,6 @@
         if case .received(let data) = newState {
           onReceived(data)
           receiver.acknowledgeReceived()
-          dismiss()
         }
       }
       .onDisappear {
@@ -77,10 +81,12 @@
       switch receiver.state {
       case .idle, .listening:
         ProgressView()
+          .controlSize(.large)
         Text("iPhoneを探しています...\n「このiPhoneで撮影」から送信してください")
           .multilineTextAlignment(.center)
       case .receiving:
         ProgressView()
+          .controlSize(.large)
         Text("写真を受信中...")
       case .received:
         Text("写真を受信しました")
@@ -123,10 +129,11 @@
 
     private func overlayLabel(@ViewBuilder content: () -> some View) -> some View {
       content()
-        .padding(10)
-        .background(.black.opacity(0.6), in: RoundedRectangle(cornerRadius: 10))
+        .font(.system(size: 24))
+        .padding(16)
+        .background(.black.opacity(0.6), in: RoundedRectangle(cornerRadius: 12))
         .foregroundStyle(.white)
-        .padding(.bottom, 24)
+        .padding(.bottom, 32)
     }
   }
 #endif

@@ -96,24 +96,10 @@ struct IPhonePhotoTips: View {
     }
   }
 
-  /// 作例写真の枠。画像が用意できたら Rectangle を Image に差し替える。
+  /// 作例。同じ場所から 1x → 2x → 4x → 8x とレンズを切り替えた実写を自動で
+  /// 広角→望遠の一方向で繰り返し再生し、望遠側ほど背景のビルがボケることを見せる（Tip 03 の裏付け）。
   private var samplePhoto: some View {
-    Rectangle()
-      .fill(slideTheme.secondaryTextColor.opacity(0.12))
-      .overlay {
-        VStack(spacing: 16) {
-          Text("［ 作例写真 ］")
-            .font(.system(size: 34, weight: .semibold))
-            .tracking(3)
-          Text("640 × 844")
-            .font(.system(size: 26))
-        }
-        .foregroundStyle(slideTheme.secondaryTextColor)
-      }
-      .overlay {
-        Rectangle()
-          .strokeBorder(slideTheme.primaryTextColor.opacity(0.24), lineWidth: 2)
-      }
+    TelephotoSequenceView()
       .frame(maxWidth: .infinity, maxHeight: .infinity)
   }
 
