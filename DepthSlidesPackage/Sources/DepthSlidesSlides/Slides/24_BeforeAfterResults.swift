@@ -31,12 +31,12 @@ struct BeforeAfterResults: View {
   /// 「どっちが iPhone で撮影したでしょう？」で使った写真なので、
   /// 締めに持ってきている。
   private static let pairs: [ResultPair] = [
-    ResultPair(before: .result01Before, after: .result01After),
-    ResultPair(before: .result06Before, after: .result06After),
     ResultPair(before: .result02Before, after: .result02After),
     ResultPair(before: .result03Before, after: .result03After),
     ResultPair(before: .result04Before, after: .result04After),
     ResultPair(before: .result05Before, after: .result05After),
+    ResultPair(before: .result01Before, after: .result01After),
+    ResultPair(before: .result06Before, after: .result06After),
     ResultPair(before: .result07Before, after: .result07After),
   ]
 
@@ -107,6 +107,61 @@ struct BeforeAfterResults: View {
   let container = ObservableObjectContainer()
   _ = container.resolve {
     PhasedStateStore<BeforeAfterResults.SlidePhase>(.initial)
+  }
+  let controller = SlideIndexController(container: container) {
+    BeforeAfterResults()
+  }
+  return SlideRouterView(slideIndexController: controller)
+}
+
+#Preview("second") {
+  let container = ObservableObjectContainer()
+  _ = container.resolve {
+    PhasedStateStore<BeforeAfterResults.SlidePhase>(.second)
+  }
+  let controller = SlideIndexController(container: container) {
+    BeforeAfterResults()
+  }
+  return SlideRouterView(slideIndexController: controller)
+}
+
+#Preview("third") {
+  let container = ObservableObjectContainer()
+  _ = container.resolve {
+    PhasedStateStore<BeforeAfterResults.SlidePhase>(.third)
+  }
+  let controller = SlideIndexController(container: container) {
+    BeforeAfterResults()
+  }
+  return SlideRouterView(slideIndexController: controller)
+}
+
+#Preview("fourth") {
+  let container = ObservableObjectContainer()
+  _ = container.resolve {
+    PhasedStateStore<BeforeAfterResults.SlidePhase>(.fourth)
+  }
+  let controller = SlideIndexController(container: container) {
+    BeforeAfterResults()
+  }
+  return SlideRouterView(slideIndexController: controller)
+}
+
+#Preview("fifth") {
+  let container = ObservableObjectContainer()
+  _ = container.resolve {
+    PhasedStateStore<BeforeAfterResults.SlidePhase>(.fifth)
+  }
+  let controller = SlideIndexController(container: container) {
+    BeforeAfterResults()
+  }
+  return SlideRouterView(slideIndexController: controller)
+}
+
+#Preview("sixth") {
+  let container = ObservableObjectContainer()
+  _ = container.resolve {
+    PhasedStateStore<BeforeAfterResults.SlidePhase>(.sixth)
   }
   let controller = SlideIndexController(container: container) {
     BeforeAfterResults()
