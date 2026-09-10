@@ -15,7 +15,7 @@ struct BokehFilterResultGridView: View {
   @Environment(\.slideTheme) var theme
   @Environment(\.webPageLoadingTracker) private var loadingTracker
 
-  /// 強調表示するフィルター（今回採用したもの）。`21_BokehFilterResults` は
+  /// 強調表示するフィルター（今回採用したもの）。`22_BokehFilterResults` は
   /// まず全7種をフラットに見せ、次のフェーズで採用したものを強調するため、
   /// フェーズに応じて nil ↔︎ 値 が切り替わる。
   var highlighted: BokehFilterKind?
@@ -177,7 +177,7 @@ struct BokehFilterResultGridView: View {
     tiles = rendered
   }
 
-  /// タイル下に添える一言。`20_BokehBlurComparison` の分類と対応させる。
+  /// タイル下に添える一言。`21_BokehBlurComparison` の分類と対応させる。
   nonisolated private static func caption(for kind: BokehFilterKind) -> String {
     switch kind {
     case .boxBlur: "一様: 正方形"

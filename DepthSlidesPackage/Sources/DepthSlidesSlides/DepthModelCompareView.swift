@@ -5,62 +5,83 @@ import PhotosUI
 import SwiftUI
 import UniformTypeIdentifiers
 
-/// 登壇中に実際の写真を選び、複数の Core ML 深度推定モデルを切り替えながら
-/// 元画像とのビフォーアフター比較（ドラッグで見え隠れ・ピンチズーム）ができる
-/// スライド向けView。開発用の簡易デモ `DepthModelPickerView` とは別に、
-/// 本番のスライドで使う機能（ファイル選択・セグメントコントロール・
-/// ズーム・キャッシュ）をまとめて持つ。
+/// 登壇中に実際の写真を選び、利用できる深度推定モデルすべての結果を一覧で
+/// 見比べるスライド向けView。開発用の簡易デモ `DepthModelPickerView` とは別に、
+/// 本番のスライドで使う機能（ファイル選択・iPhone からの受信・キャッシュ）を
+/// まとめて持つ。
+///
+/// 後のボケ比較（`BokehFilterResultGridView`）と同じ形で、左上に元画像、続けて
+/// モデルの結果をタイルで並べ、タイトルは画像の下に置く。3 列なので iPhone は
+/// 元画像 + 4 モデルで 2 段、macOS は Depth Pro が加わって 3×2 が埋まる。
+/// セグメントで「深度画像 / モデルの入手・変換コード / 推論コード」を切り替えても
+/// タイルの位置は変えず、同じモデルが常に同じ場所に来るようにしている。
+/// モデルを 1 つずつ切り替えて見比べる方式は、どのモデルを見ているのか聴衆が
+/// 追いづらかったため、全部を同時に並べる方式に変えた。タイルをタップすると拡大
+/// して、深度は元画像との見え隠れ比較、コードはスライドの Markdown 描画で
+/// フルサイズに読める。
 struct DepthModelCompareView: View {
   private enum DisplayMode: String, CaseIterable, Identifiable {
-    case compare, blur, conversionCode, code
+    case depth, conversionCode, code
 
     var id: String { rawValue }
 
     var displayName: String {
       switch self {
-      case .compare: "深度比較"
-      case .blur: "ボケ適用"
-      case .conversionCode: "モデル変換コード"
-      case .code: "コード"
+      case .depth: "深度画像"
+      case .conversionCode: "モデルの入手・変換コード"
+      case .code: "推論コード"
       }
     }
   }
 
+  /// 各モデルの推論の進み具合。タイルのプレースホルダーに表示する。
+  private enum CellStatus: Equatable {
+    case waiting
+    case working(String)
+    case failed(String)
+  }
+
+  /// 格子の 1 マス。先頭が元画像で、以降は `DepthModel.availableCases` の順。
+  private enum Tile: Hashable {
+    case original
+    case model(DepthModel)
+  }
+
   @Environment(\.slideTheme) var slideTheme
+
+  /// 表示時に自動で読み込む写真。プレビューで格子の見た目を確認するためのもので、
+  /// 本番のスライドでは渡さない（登壇中に撮った写真を読み込む）。
+  var initialImageData: Data?
 
   @State private var pickerItem: PhotosPickerItem?
   @State private var isFileImporterPresented = false
   @State private var isPeerCaptureCameraPresented = false
   @State private var isPeerReceiverPresented = false
-  @State private var selectedModel: DepthModel = .embeddedDepth
-  @State private var displayMode: DisplayMode = .compare
+  @State private var displayMode: DisplayMode = .depth
 
   @State private var imageData: Data?
   @State private var originalCGImage: CGImage?
-  @State private var depthCGImage: CGImage?
-  @State private var blurredCGImage: CGImage?
-  @State private var focusPoint: CGPoint?
+  @State private var depthImages: [DepthModel: CGImage] = [:]
+  @State private var statuses: [DepthModel: CellStatus] = [:]
   @State private var statusMessage = "写真を選んでください"
 
+  /// タップして拡大表示中のセル。`nil` なら格子表示。
+  @State private var expandedModel: DepthModel?
   @State private var zoomState = ImageZoomState.identity
   @State private var revealFraction: CGFloat = 0.5
-  @State private var blurZoomState = ImageZoomState.identity
 
-  /// 新しい写真を選んだときに、選択中以外のモデルの推論を裏で直列に進めておくタスク。
-  /// 次の写真が選ばれたら古いプリフェッチはキャンセルして置き換える。
-  @State private var prefetchTask: Task<Void, Never>?
-
-  /// 選択中モデルの推論（`runEstimation`）を実行中のタスク。モデルを切り替えたり
-  /// 画面から離れたりしたときに、actor のキューで順番待ちしている古い推論を
-  /// キャンセルして無駄に走らせないために保持する。
+  /// 現在の写真に対して全モデルの推論を直列に進めるタスク。次の写真が選ばれたら
+  /// 古いものはキャンセルして置き換える。
   @State private var estimationTask: Task<Void, Never>?
-
-  /// 現在の写真に対して推論結果がまだ用意できていないモデルの集合。
-  /// モデル選択のセグメント名の横にインジケーターを表示するのに使う。
-  @State private var inferringModels: Set<DepthModel> = []
 
   private let context = CIContext()
   private let converter = MarkdownToSlideConverter()
+
+  /// 格子に並べるモデル。`DepthModel.availableCases` の並び（写真埋め込み →
+  /// リリースの古い順）そのまま。
+  private var models: [DepthModel] { DepthModel.availableCases }
+
+  private var tiles: [Tile] { [.original] + models.map(Tile.model) }
 
   var body: some View {
     VStack(spacing: 16) {
@@ -79,23 +100,8 @@ struct DepthModelCompareView: View {
       }
       .pickerStyle(.segmented)
 
-      Picker("モデル", selection: $selectedModel) {
-        ForEach(DepthModel.availableCases) { model in
-          // セグメント内では任意のViewはもちろん、Text に補間した SF Symbol も
-          // 描画されない（検証済み）ため、Unicode 文字でインジケーターを表現する。
-          if inferringModels.contains(model) {
-            Text("\(model.displayName) ⏳").tag(model)
-          } else {
-            Text(model.displayName).tag(model)
-          }
-        }
-      }
-      .pickerStyle(.segmented)
-
       // 素のラベルだけだと当たり判定が文字の幅しかなく、スライド表示で縮小される
       // と押しにくかったため、横幅いっぱいの大きな枠付きボタンにしている。
-      // 以前は写真エリア右上に小さなフローティングボタンとして置いていた
-      // iPhone 撮影／受信のボタンも、同じ理由でこの列にまとめた。
       HStack(spacing: 16) {
         PhotosPicker(selection: $pickerItem, matching: .images) {
           pickerButtonLabel("写真ライブラリから選択", systemImage: "photo.badge.plus")
@@ -134,16 +140,20 @@ struct DepthModelCompareView: View {
     .onChange(of: pickerItem) { _, newItem in
       Task { await loadFromPhotosPicker(newItem) }
     }
-    .onChange(of: selectedModel) { _, _ in
-      estimationTask?.cancel()
-      estimationTask = Task { await runEstimation() }
+    .task {
+      if let initialImageData, imageData == nil {
+        await loadImage(from: initialImageData)
+      }
+    }
+    .onChange(of: displayMode) { _, _ in
+      // 深度画像で拡大したままコードに切り替えると、そのモデルのコードだけが
+      // 全面に出て他と見比べられないので、格子に戻す。
+      expandedModel = nil
     }
     .onDisappear {
       // スライドから離れたら、順番待ちの推論（特に最重量の depthPro）を
       // 開始させない。すでに実行中の1件の `MLModel.prediction` は同期実行の
       // ため中断できず、それだけは完走する。
-      prefetchTask?.cancel()
-      prefetchTask = nil
       estimationTask?.cancel()
       estimationTask = nil
     }
@@ -174,62 +184,218 @@ struct DepthModelCompareView: View {
     #endif
   }
 
+  // MARK: - 表示
+
   @ViewBuilder
   private var contentView: some View {
-    switch displayMode {
-    case .compare:
-      if let originalCGImage, let depthCGImage {
-        BeforeAfterImageCompareView(
-          before: originalCGImage,
-          after: depthCGImage,
-          zoomState: $zoomState,
-          revealFraction: $revealFraction
-        )
+    if let expandedModel {
+      expandedView(for: expandedModel)
         .padding(8)
-      } else {
-        statusText
-      }
-    case .blur:
-      if let blurredCGImage {
-        VStack(spacing: 4) {
-          HStack {
-            Text("画像をタップしてピントを合わせられます")
-              .font(.system(size: 14))
-              .foregroundStyle(slideTheme.secondaryTextColor)
-            if focusPoint != nil {
-              Button("ピントをリセット") {
-                focusPoint = nil
-                Task { await recomputeBlur() }
-              }
-              .font(.system(size: 14))
+    } else if displayMode == .depth && originalCGImage == nil {
+      // 写真を選ぶ前はコードだけ先に見せられるようにし、深度画像モードでは
+      // 案内文を出す（読み込み失敗のメッセージもここに出る）。
+      statusText
+    } else {
+      grid
+        .padding(8)
+    }
+  }
+
+  /// 3 列固定。ボケ比較は 8 タイルで 4 列だが、こちらは 5〜6 タイルなので
+  /// 3 列にしてタイルを大きく取る。
+  private static let columnCount = 3
+
+  private var grid: some View {
+    let columns = Self.columnCount
+    let rows = Int((Double(tiles.count) / Double(columns)).rounded(.up))
+    return Grid(horizontalSpacing: 12, verticalSpacing: 12) {
+      ForEach(0..<rows, id: \.self) { row in
+        GridRow {
+          ForEach(0..<columns, id: \.self) { column in
+            let index = row * columns + column
+            if index < tiles.count {
+              tileView(tiles[index])
+            } else {
+              Color.clear
             }
           }
-          // 「元画像 vs ボケ適用後」を見え隠れスライダーで比較する方式は、
-          // タップした位置が今どちらのレイヤーの上にあるのか分かりにくく
-          // 混乱を招いたため、ボケ適用後の結果画像だけを表示するシンプルな
-          // 構成に変更している（元画像との比較は既存の「深度比較」モードで代用可能）。
-          ZoomableFocusableImageView(
-            image: blurredCGImage,
-            onTap: { point in
-              focusPoint = point
-              Task { await recomputeBlur() }
-            },
-            zoomState: $blurZoomState
-          )
         }
-        .padding(8)
-      } else {
-        statusText
-      }
-    case .conversionCode:
-      ScrollView {
-        converter.convertPage(selectedModel.conversionMarkdown)
-      }
-    case .code:
-      ScrollView {
-        converter.convertPage(codeMarkdown)
       }
     }
+  }
+
+  @ViewBuilder
+  private func tileView(_ tile: Tile) -> some View {
+    switch tile {
+    case .original:
+      if let originalCGImage {
+        imageTile(originalCGImage, title: "元画像")
+      } else {
+        // コードモードは写真を選ぶ前でも見られるので、元画像の枠だけ出しておく。
+        placeholderTile(title: "元画像") {
+          Text("写真を選んでください")
+        }
+      }
+    case .model(let model):
+      modelTile(for: model)
+    }
+  }
+
+  @ViewBuilder
+  private func modelTile(for model: DepthModel) -> some View {
+    switch displayMode {
+    case .depth:
+      if let depth = depthImages[model] {
+        imageTile(depth, title: model.displayName)
+          .contentShape(Rectangle())
+          .onTapGesture { expand(model) }
+      } else {
+        placeholderTile(title: model.displayName) {
+          switch statuses[model] ?? .waiting {
+          case .waiting:
+            ProgressView()
+            Text("順番待ち")
+          case .working(let message):
+            ProgressView()
+            Text(message)
+          case .failed(let message):
+            Image(systemName: "exclamationmark.triangle")
+            Text(message)
+          }
+        }
+      }
+    case .conversionCode:
+      codeTile(document: CodeDocument(markdown: model.conversionMarkdown), model: model)
+    case .code:
+      codeTile(
+        document: CodeDocument(title: model.codeSectionTitle, code: model.estimationCodeSample),
+        model: model)
+    }
+  }
+
+  /// タイルの共通の形。中身を枠いっぱいに広げ、タイトルを下に添える
+  /// （`BokehFilterResultGridView.tileView` と同じ体裁）。
+  private func tileFrame<Content: View>(
+    title: String, @ViewBuilder content: () -> Content
+  ) -> some View {
+    VStack(spacing: 4) {
+      content()
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+      Text(title)
+        .font(.system(size: 22))
+        .foregroundStyle(slideTheme.primaryTextColor)
+        .lineLimit(1)
+    }
+  }
+
+  private func imageTile(_ image: CGImage, title: String) -> some View {
+    tileFrame(title: title) {
+      Image(decorative: image, scale: 1)
+        .resizable()
+        .aspectRatio(contentMode: .fit)
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+    }
+  }
+
+  private func placeholderTile<Content: View>(
+    title: String, @ViewBuilder content: () -> Content
+  ) -> some View {
+    tileFrame(title: title) {
+      VStack(spacing: 12) {
+        content()
+      }
+      .font(.system(size: 22))
+      .foregroundStyle(slideTheme.secondaryTextColor)
+      .multilineTextAlignment(.center)
+      .padding(24)
+      .frame(maxWidth: .infinity, maxHeight: .infinity)
+      .background(RoundedRectangle(cornerRadius: 8).fill(.black.opacity(0.04)))
+    }
+  }
+
+  /// コードは格子の 1 マスに収まる大きさの等幅 Text で出し、読みたければタップで
+  /// 拡大してもらう（Markdown 描画はスライド用の文字サイズで、マスには収まらない）。
+  private func codeTile(document: CodeDocument, model: DepthModel) -> some View {
+    tileFrame(title: model.displayName) {
+      VStack(alignment: .leading, spacing: 8) {
+        if let heading = document.title {
+          Text(heading)
+            .font(.system(size: 20, weight: .semibold))
+            .foregroundStyle(slideTheme.primaryTextColor)
+            .padding(.horizontal, 12)
+            .padding(.top, 10)
+        }
+        ScrollView([.vertical, .horizontal]) {
+          Text(document.body)
+            .font(.system(size: 18, design: document.isCode ? .monospaced : .default))
+            .foregroundStyle(slideTheme.primaryTextColor)
+            .lineSpacing(3)
+            .fixedSize(horizontal: true, vertical: false)
+            .padding(.horizontal, 12)
+            .padding(.bottom, 12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+      }
+      .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+      .background(RoundedRectangle(cornerRadius: 8).fill(slideTheme.tableBackgroundColor))
+      .contentShape(Rectangle())
+      .onTapGesture { expand(model) }
+    }
+  }
+
+  @ViewBuilder
+  private func expandedView(for model: DepthModel) -> some View {
+    VStack(spacing: 8) {
+      HStack {
+        Text(model.displayName)
+          .font(.system(size: 28, weight: .semibold))
+          .foregroundStyle(slideTheme.primaryTextColor)
+        Spacer()
+        Button {
+          expandedModel = nil
+        } label: {
+          Label("一覧に戻る", systemImage: "square.grid.2x2")
+            .font(.system(size: 24))
+        }
+        .buttonStyle(.bordered)
+      }
+
+      switch displayMode {
+      case .depth:
+        if let originalCGImage, let depth = depthImages[model] {
+          BeforeAfterImageCompareView(
+            before: originalCGImage,
+            after: depth,
+            zoomState: $zoomState,
+            revealFraction: $revealFraction
+          )
+        } else {
+          statusText
+        }
+      case .conversionCode:
+        ScrollView {
+          converter.convertPage(model.conversionMarkdown)
+        }
+      case .code:
+        ScrollView {
+          converter.convertPage(
+            """
+            ### \(model.codeSectionTitle)
+
+            ```swift
+            \(model.estimationCodeSample)
+            ```
+            """)
+        }
+      }
+    }
+  }
+
+  private func expand(_ model: DepthModel) {
+    zoomState = .identity
+    revealFraction = 0.5
+    expandedModel = model
   }
 
   /// 写真選択ボタンの中身。`contentShape` を含めてボタン全体を押せる領域にする。
@@ -247,22 +413,6 @@ struct DepthModelCompareView: View {
       .foregroundStyle(slideTheme.secondaryTextColor)
       .multilineTextAlignment(.center)
       .padding()
-  }
-
-  private var codeMarkdown: String {
-    """
-    ### \(selectedModel.codeSectionTitle)
-
-    ```swift
-    \(selectedModel.estimationCodeSample)
-    ```
-
-    ### 共通のボケ適用処理
-
-    ```swift
-    \(DepthBokehBlur.sampleCode)
-    ```
-    """
   }
 
   // MARK: - 画像の読み込み
@@ -293,17 +443,15 @@ struct DepthModelCompareView: View {
     }
   }
 
-  /// Photos・ファイルどちらの経路も、最終的にこの1箇所で同じデコード処理に収束させる。
-  /// 新しい画像が選ばれたタイミングでのみズーム・比較スライダーの位置をリセットする
-  /// （モデルを切り替えたときは `onChange(of: selectedModel)` 側でリセットしないため保持される）。
+  /// Photos・ファイル・iPhone からの受信、どの経路も最終的にこの1箇所で同じ
+  /// デコード処理に収束させる。
   private func loadImage(from data: Data) async {
-    prefetchTask?.cancel()
-    prefetchTask = nil
     estimationTask?.cancel()
     estimationTask = nil
 
-    depthCGImage = nil
-    blurredCGImage = nil
+    depthImages = [:]
+    statuses = [:]
+    expandedModel = nil
     statusMessage = "読み込み中..."
 
     guard let source = CGImageSourceCreateWithData(data as CFData, nil),
@@ -317,30 +465,9 @@ struct DepthModelCompareView: View {
 
     imageData = data
     originalCGImage = oriented
-    zoomState = .identity
-    revealFraction = 0.5
-    blurZoomState = .identity
-    focusPoint = nil
+    statuses = Dictionary(uniqueKeysWithValues: models.map { ($0, CellStatus.waiting) })
 
-    // 今回の写真で推論対象となる全モデル（選択中モデル + プリフェッチ対象）を
-    // 「未完了」として登録する。完了するたびに各処理側で取り除く。
-    var pending = Set(
-      DepthModel.availableCases.filter { $0 != .embeddedDepth && $0.packageURL != nil })
-    pending.insert(selectedModel)
-    inferringModels = pending
-
-    // 画面から離れたときにキャンセルできるよう `estimationTask` として保持しつつ、
-    // プリフェッチより先に選択中モデルの推論が終わるのを待つ。
-    let task = Task { await runEstimation() }
-    estimationTask = task
-    await task.value
-
-    // 選択中モデルの推論が終わってから残りのモデルを裏で直列にプリフェッチする
-    // （actor のキュー順で選択中モデルが必ず先に処理されるようにするため）。
-    let selected = selectedModel
-    prefetchTask = Task {
-      await prefetchRemainingModels(imageData: data, cgImage: oriented, excluding: selected)
-    }
+    estimationTask = Task { await estimateAllModels(imageData: data, cgImage: oriented) }
   }
 
   private func orientedCGImage(_ cgImage: CGImage, orientation: CGImagePropertyOrientation?)
@@ -353,152 +480,134 @@ struct DepthModelCompareView: View {
 
   // MARK: - 推論
 
-  private func runEstimation() async {
-    guard let originalCGImage, let imageData else { return }
-
-    depthCGImage = nil
-    blurredCGImage = nil
-
-    // await 中にモデルや写真が切り替わった場合、古い結果で表示を上書きしない
-    // ようにするためのスナップショット。
-    let model = selectedModel
-    let cacheKey = DepthCacheKey(imageData: imageData, model: model)
-
-    // キャッシュ済みなら actor（推論キュー）を経由せず同期的に取り出して即表示する。
-    // `estimateCached` の中にもキャッシュ判定はあるが、actor がプリフェッチ中の
-    // 別モデルの推論で塞がっているとその判定まで待たされてしまうため、
-    // ここで先に引くことに意味がある。
-    if let cached = DepthEstimator.shared.cachedDepthImage(for: cacheKey) {
-      finishInferring(model, for: imageData)
-      depthCGImage = cached
-      await recomputeBlur()
-      return
-    }
-
-    if model == .embeddedDepth {
-      statusMessage = "写真に埋め込まれた深度情報を抽出中..."
-      do {
-        let result = try await Task.detached(priority: .userInitiated) {
-          try EmbeddedDepthExtractor.extractDepthImage(from: imageData)
-        }.value
-        DepthEstimator.shared.storeDepthImage(result, for: cacheKey)
-        finishInferring(model, for: imageData)
-        guard model == selectedModel, imageData == self.imageData else { return }
-        depthCGImage = result
-        await recomputeBlur()
-      } catch EmbeddedDepthExtractor.ExtractionError.noEmbeddedDepthData {
-        finishInferring(model, for: imageData)
-        guard model == selectedModel, imageData == self.imageData else { return }
-        statusMessage = "この写真には深度情報が含まれていません（Portraitモードで撮影した写真をお試しください）"
-      } catch {
-        finishInferring(model, for: imageData)
-        guard model == selectedModel, imageData == self.imageData else { return }
-        statusMessage = "深度情報の抽出に失敗しました: \(error)"
-      }
-      return
-    }
-
-    guard model.packageURL != nil else {
-      finishInferring(model, for: imageData)
-      statusMessage =
-        "\(model.displayName) のモデルが見つかりません。scripts/ 以下のスクリプトを実行してください"
-      return
-    }
-
-    // actor がプリフェッチ中の別モデルの推論で塞がっている間は onPhase が
-    // 呼ばれないため、順番待ちの間はこの表示のままになる。
-    statusMessage = "\(model.displayName) の推論を準備中...（他のモデルの処理待ちの場合があります）"
-
-    do {
-      let result = try await DepthEstimator.shared.estimateCached(
-        cgImage: originalCGImage, model: model, cacheKey: cacheKey
-      ) { phase in
-        // await 中に別のモデル・写真へ切り替わっていたら、古いフェーズ表示で
-        // 上書きしない。
-        guard model == selectedModel, imageData == self.imageData else { return }
-        switch phase {
-        case .compilingModel:
-          statusMessage = "\(model.displayName) のモデルをコンパイル中...（初回のみ）"
-        case .loadingModel:
-          statusMessage = "\(model.displayName) のモデルを読み込み中...（この端末での初回は数分かかることがあります）"
-        case .inferring:
-          statusMessage = "\(model.displayName) で推論中..."
-        }
-      }
-      finishInferring(model, for: imageData)
-      guard model == selectedModel, imageData == self.imageData else { return }
-      depthCGImage = result
-
-      // ボケモードに切り替えたときに待ち時間なしで表示できるよう、深度が
-      // 確定した時点で続けて計算しておく。
-      await recomputeBlur()
-    } catch is CancellationError {
-      // 画面から離れた・モデルや写真を切り替えた等で不要になった推論。
-      // 表示はキャンセルした側が引き継ぐため、ここでは何もしない。
-      return
-    } catch {
-      finishInferring(model, for: imageData)
-      guard model == selectedModel, imageData == self.imageData else { return }
-      statusMessage = "推論に失敗しました: \(error)"
-    }
-  }
-
-  /// 対象の写真が今も表示中の場合のみ、モデルの推論完了を記録してインジケーターを消す。
-  /// await 中に別の写真へ切り替わっていた場合は、新しい写真の未完了状態を壊さない。
-  private func finishInferring(_ model: DepthModel, for imageData: Data) {
-    guard imageData == self.imageData else { return }
-    inferringModels.remove(model)
-  }
-
-  /// 選択中のモデル以外の各モデルの推論を裏で直列に進め、あとでモデルを
-  /// 切り替えたときにキャッシュヒットで即座に表示できるようにする。
+  /// 全モデルの推論を直列に進め、終わったものから格子に表示する。
   /// `DepthEstimator` は actor で推論本体が同期実行のため、1つの Task 内で
-  /// 順番に await するだけで直列になる。選択中のモデルは `runEstimation()` が
-  /// 担当するため除外する。表示には `inferringModels` の更新以外では触れない。
-  private func prefetchRemainingModels(
-    imageData: Data, cgImage: CGImage, excluding selected: DepthModel
-  ) async {
-    // depthPro（macOS のみ・最重量）はプリフェッチ中のモデル切り替えを
-    // 待たせる時間が長くなるため最後に回す。
-    var targets = DepthModel.availableCases.filter {
-      $0 != .embeddedDepth && $0 != selected && $0.packageURL != nil
-    }
+  /// 順番に await するだけで直列になる。depthPro（macOS のみ・最重量）は
+  /// 他の結果を待たせないよう最後に回す。
+  private func estimateAllModels(imageData: Data, cgImage: CGImage) async {
+    var targets = models
     if let index = targets.firstIndex(of: .depthPro) {
       targets.append(targets.remove(at: index))
     }
 
     for model in targets {
       if Task.isCancelled { return }
-      do {
-        _ = try await DepthEstimator.shared.estimateCached(
-          cgImage: cgImage, model: model,
-          cacheKey: DepthCacheKey(imageData: imageData, model: model))
-      } catch {
-        // モデル未変換などで1つ失敗しても、残りのモデルのプリフェッチは続行する。
-      }
-      // キャンセルで打ち切られた場合は推論が完了していないので、
-      // 「完了した」印（インジケーターの消去）は付けない。
-      if Task.isCancelled { return }
-      finishInferring(model, for: imageData)
+      await estimate(model, imageData: imageData, cgImage: cgImage)
     }
   }
 
-  /// `originalCGImage`/`depthCGImage`/`focusPoint`（タップでピントを指定した場合）
-  /// から `blurredCGImage` を計算し直す。モデル切り替え後の再推論後と、
-  /// ユーザーが画像をタップしてピント位置を変更したときの両方から呼ばれる。
-  private func recomputeBlur() async {
-    guard let originalCGImage, let depthCGImage else { return }
-    // Task.detached のクロージャに actor-isolated な @State を直接キャプチャさせない
-    // よう、呼び出し前にローカル定数へスナップショットしておく。
-    let focusPoint = focusPoint
-    // GPU処理だが念のため MainActor をブロックしないよう Task.detached にしている。
-    blurredCGImage = await Task.detached(priority: .userInitiated) {
-      DepthBokehBlur.apply(original: originalCGImage, depth: depthCGImage, focusPoint: focusPoint)
-    }.value
+  private func estimate(_ model: DepthModel, imageData: Data, cgImage: CGImage) async {
+    let cacheKey = DepthCacheKey(imageData: imageData, model: model)
+
+    // キャッシュ済みなら actor（推論キュー）を経由せず即表示する。
+    if let cached = DepthEstimator.shared.cachedDepthImage(for: cacheKey) {
+      store(cached, for: model, imageData: imageData)
+      return
+    }
+
+    if model == .embeddedDepth {
+      setStatus(.working("写真に埋め込まれた深度情報を抽出中..."), for: model, imageData: imageData)
+      do {
+        let result = try await Task.detached(priority: .userInitiated) {
+          try EmbeddedDepthExtractor.extractDepthImage(from: imageData)
+        }.value
+        DepthEstimator.shared.storeDepthImage(result, for: cacheKey)
+        store(result, for: model, imageData: imageData)
+      } catch EmbeddedDepthExtractor.ExtractionError.noEmbeddedDepthData {
+        setStatus(
+          .failed("この写真には深度情報が含まれていません（Portraitモードで撮影した写真をお試しください）"),
+          for: model, imageData: imageData)
+      } catch {
+        setStatus(.failed("深度情報の抽出に失敗しました: \(error)"), for: model, imageData: imageData)
+      }
+      return
+    }
+
+    guard model.packageURL != nil else {
+      setStatus(
+        .failed("モデルが見つかりません。scripts/ 以下のスクリプトを実行してください"),
+        for: model, imageData: imageData)
+      return
+    }
+
+    setStatus(.working("推論を準備中..."), for: model, imageData: imageData)
+
+    do {
+      let result = try await DepthEstimator.shared.estimateCached(
+        cgImage: cgImage, model: model, cacheKey: cacheKey
+      ) { phase in
+        let message =
+          switch phase {
+          case .compilingModel: "モデルをコンパイル中...（初回のみ）"
+          case .loadingModel: "モデルを読み込み中...（この端末での初回は数分かかることがあります）"
+          case .inferring: "推論中..."
+          }
+        setStatus(.working(message), for: model, imageData: imageData)
+      }
+      store(result, for: model, imageData: imageData)
+    } catch is CancellationError {
+      // 画面から離れた・写真を切り替えた等で不要になった推論。
+      return
+    } catch {
+      setStatus(.failed("推論に失敗しました: \(error)"), for: model, imageData: imageData)
+    }
+  }
+
+  /// await 中に別の写真へ切り替わっていた場合、古い写真の結果で新しい写真の
+  /// 表示を上書きしない。
+  private func store(_ image: CGImage, for model: DepthModel, imageData: Data) {
+    guard imageData == self.imageData else { return }
+    depthImages[model] = image
+    statuses[model] = nil
+  }
+
+  private func setStatus(_ status: CellStatus, for model: DepthModel, imageData: Data) {
+    guard imageData == self.imageData else { return }
+    statuses[model] = status
   }
 }
 
-#Preview {
+/// 格子のマスに出すために、`DepthModel` のコード用 Markdown を見出しと本文に
+/// ほぐしたもの。Markdown をまともに描くのは拡大表示（`convertPage`）に任せ、
+/// ここでは `###` の見出し行とコードフェンスを剥がすだけにとどめる。
+private struct CodeDocument {
+  let title: String?
+  let body: String
+  /// 本文がコードなら等幅で出す（写真埋め込みの入手方法のような散文は通常のフォント）。
+  let isCode: Bool
+
+  init(title: String, code: String) {
+    self.title = title
+    self.body = code
+    self.isCode = true
+  }
+
+  init(markdown: String) {
+    var title: String?
+    var lines: [String] = []
+    var sawFence = false
+    for line in markdown.split(separator: "\n", omittingEmptySubsequences: false) {
+      if line.hasPrefix("### ") {
+        title = String(line.dropFirst(4))
+      } else if line.hasPrefix("```") {
+        sawFence = true
+      } else {
+        lines.append(String(line))
+      }
+    }
+    self.title = title
+    self.body = lines.joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
+    self.isCode = sawFence
+  }
+}
+
+#Preview("写真を選ぶ前") {
   DepthModelCompareView()
     .padding()
+}
+
+#Preview("サンプル写真") {
+  DepthModelCompareView(initialImageData: DepthSampleAssets.data(for: .portraitWithDepth))
+    .padding()
+    .frame(width: 1920, height: 1080)
 }

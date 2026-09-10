@@ -3,7 +3,7 @@ import CoreImage
 import CoreImage.CIFilterBuiltins
 
 /// 深度マップを使ったボケ表現に使える Core Image のブラー系フィルター。
-/// `18_BokehBlurComparison` スライドの箇条書きと同じ7種類。
+/// `21_BokehBlurComparison` スライドの箇条書きと同じ7種類。
 enum BokehFilterKind: String, CaseIterable, Identifiable {
   case boxBlur, discBlur, gaussianBlur, maskedVariableBlur, zoomBlur, motionBlur, bokehBlur
 

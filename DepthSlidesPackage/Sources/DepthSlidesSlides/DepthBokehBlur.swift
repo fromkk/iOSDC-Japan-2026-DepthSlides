@@ -150,24 +150,4 @@ enum DepthBokehBlur {
       image, toBitmap: &pixel, rowBytes: 4, bounds: bounds, format: .RGBA8, colorSpace: nil)
     return Float(pixel[0]) / 255.0
   }
-
-  /// コード表示モードで使う、上記処理を要約したサンプルコード文字列。
-  static let sampleCode = """
-    import CoreImage.CIFilterBuiltins
-
-    // depth: 近い = 明るい / 遠い = 暗い（4モデル共通の表現）
-    let invertedMask = CIImage(cgImage: depth).applyingFilter("CIColorInvert")
-
-    // 被写体全体がシャープに見えるよう、ガンマカーブで低め〜中間の値を
-    // さらに0側へ寄せる（近い部分は0に、遠い部分ほど急にボケが強まる）
-    let contrastedMask = invertedMask.applyingFilter(
-      "CIGammaAdjust", parameters: ["inputPower": 3.0])
-
-    let blur = CIFilter.maskedVariableBlur()
-    blur.inputImage = CIImage(cgImage: original)
-    blur.mask = contrastedMask     // 遠い(=明るい)ほど強くぼかす
-    blur.radius = 24
-    let cropped = blur.outputImage!.cropped(to: CIImage(cgImage: original).extent)
-    let blurredCGImage = CIContext().createCGImage(cropped, from: cropped.extent)
-    """
 }

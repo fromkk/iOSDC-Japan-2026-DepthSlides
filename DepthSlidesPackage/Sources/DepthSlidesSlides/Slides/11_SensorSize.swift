@@ -39,7 +39,7 @@ struct SensorSize: View {
 
   var script: String = """
     次にセンサーサイズです。センサーが大きいほどたくさんの光を受け取れて、そして被写界深度が浅くなる、つまりボケやすくなります。
-    右の図は実寸比です。一番外側が中判、その次がフルサイズ。オレンジが iPhone 17 Pro の一番大きなセンサーで、面積にするとフルサイズの約 \(SensorSizeDiagramView.fullFrameToiPhoneAreaRatio) 分の 1 しかありません。
+    右の図は実寸比です。一番外側が中判、その次がフルサイズ。青く塗ってあるのが iPhone 17 Pro の一番大きなセンサーで、面積にするとフルサイズの約 \(SensorSizeDiagramView.fullFrameToiPhoneAreaRatio) 分の 1 しかありません。
     """
 
   var transition: AnyTransition = AnyTransition.awesome

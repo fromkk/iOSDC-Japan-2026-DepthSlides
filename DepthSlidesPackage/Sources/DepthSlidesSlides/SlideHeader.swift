@@ -2,7 +2,7 @@ import SwiftUI
 
 /// 本編スライド共通のヘッダー。罫 + 章名 + 章内の現在地。
 ///
-/// 見た目は作例スライド（`24_BeforeAfterResults`）が元から持っていたものに合わせて
+/// 見た目は作例スライド（`23_BeforeAfterResults`）が元から持っていたものに合わせて
 /// ある。あちらは「作例 01 / 07」と作例の枚数を数えるので、この型は使わず自前で
 /// 同じ体裁を描いている。
 struct SlideHeader: View {
@@ -79,7 +79,7 @@ struct HeaderedSlide<Content: View>: View {
 #Preview {
   VStack(spacing: 40) {
     SlideHeader(.fNumber)
-    SlideHeader(.modelUsageNotes)
+    SlideHeader(.modelComparison)
     SlideHeader(.bokehFilterResults)
     SlideHeader(label: "まとめ")
   }

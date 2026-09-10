@@ -28,6 +28,7 @@ struct ProfileSlide: View {
   }
 
   var script: String = """
+    自己紹介です。
     植岡　和哉と申します。
     iOSアプリを作る仕事をしています。
     インターネットでは @fromkk というアカウントで活動しているのでよかったらフォローしてください。

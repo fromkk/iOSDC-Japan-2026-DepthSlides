@@ -42,7 +42,7 @@ struct GoalSlide: View {
   }
 
   var script: String = """
-    今日のゴールはこちらです。左がさっきの iPhone で撮った写真で、これを後処理で、右のミラーレスで撮ったような主題だけが浮き上がる写真に近づけたい、というのが今日のお話です。
+    今日のゴールはこちらです。さっきの iPhone で撮った写真を後処理で、右のミラーレスで撮ったような主題だけが浮き上がる写真に近づけたい、というのが今日のお話です。
     """
 
   var transition: AnyTransition = AnyTransition.awesome

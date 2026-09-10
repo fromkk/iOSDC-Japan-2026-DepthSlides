@@ -2,7 +2,7 @@ import SwiftUI
 
 /// スライドヘッダーに出す「章」。
 ///
-/// 作例スライド（`24_BeforeAfterResults`）だけが持っていたヘッダー（罫 + ラベル +
+/// 作例スライド（`23_BeforeAfterResults`）だけが持っていたヘッダー（罫 + ラベル +
 /// 現在地）を本編全体に広げるにあたって、章とその中の並び順をここ一箇所に集める。
 /// スライドを増減したらこの表だけ直せば、各スライドの `SlideHeader` は追従する。
 ///
@@ -34,7 +34,7 @@ enum DeckSection: CaseIterable {
     case .iPhone:
       [.iPhonePhotoProblems, .iPhonePhotoTips, .portraitMode]
     case .depth:
-      [.embeddedDepth, .modelComparison, .modelUsageNotes, .depthModelSimulator]
+      [.embeddedDepth, .modelComparison, .depthModelSimulator]
     case .bokeh:
       [.bokehBlurComparison, .bokehFilterResults]
     }
@@ -56,7 +56,6 @@ enum DeckSlide {
 
   case embeddedDepth
   case modelComparison
-  case modelUsageNotes
   case depthModelSimulator
 
   case bokehBlurComparison
