@@ -16,6 +16,8 @@ public enum EventPRDeck {
       ExtensionDCPR(),
       KanagawaSwiftPR(),
       SaitamaSwiftPR(),
+      // Saitama.swift の会場である所沢の紹介。締めのスライド。
+      TokorozawaGuide(),
     ]
   }
 }
