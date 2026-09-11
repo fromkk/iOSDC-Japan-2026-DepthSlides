@@ -1,26 +1,24 @@
 import SwiftUI
 
-/// 本編スライド共通のヘッダー。罫 + 章名 + 章内の現在地。
+/// 本編スライド共通のヘッダー。罫 + 章名。
 ///
-/// 見た目は作例スライド（`23_BeforeAfterResults`）が元から持っていたものに合わせて
+/// 見た目は作例スライド（`24_BeforeAfterResults`）が元から持っていたものに合わせて
 /// ある。あちらは「作例 01 / 07」と作例の枚数を数えるので、この型は使わず自前で
 /// 同じ体裁を描いている。
+///
+/// 通しのページ番号は SlideKit が画面右下に共通で出しているので、ヘッダー右側では
+/// 数を出さない（同じ情報が 2 箇所に出て紛らわしいため）。
 struct SlideHeader: View {
   @Environment(\.slideTheme) private var theme
 
   private let label: String
-  /// 章に属さないスライド（まとめなど）では nil にして現在地を出さない。
-  private let counter: String?
 
   init(_ slide: DeckSlide) {
-    let placement = slide.placement
-    self.label = placement.section.title
-    self.counter = String(format: "%02d / %02d", placement.index, placement.total)
+    self.label = slide.section.title
   }
 
   init(label: String) {
     self.label = label
-    self.counter = nil
   }
 
   var body: some View {
@@ -35,14 +33,6 @@ struct SlideHeader: View {
       .foregroundStyle(theme.primaryTextColor)
 
       Spacer()
-
-      if let counter {
-        Text(counter)
-          .font(.system(size: 30))
-          .monospacedDigit()
-          .tracking(2.4)
-          .foregroundStyle(theme.secondaryTextColor)
-      }
     }
   }
 }

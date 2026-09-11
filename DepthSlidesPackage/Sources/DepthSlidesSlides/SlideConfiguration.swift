@@ -20,8 +20,10 @@ public struct SlideConfiguration {
       PhotoComparison(),
       GoalSlide(),
       ProfileSlide(),
+      HistorySlide(),
       AnnounceSlide(),
       // 第1幕: なぜ iPhone はボケないか
+      WhyNoBokehSectionDivider(),
       CameraObscuraOrigin(),
       AboutLens(),
       ConvexLensSimulation(),
@@ -33,7 +35,6 @@ public struct SlideConfiguration {
       PortraitMode(),
       // 第2幕: 自分で作る（深度を得る → ぼかす）
       BokehImprovementApproaches(),
-      DepthSectionDivider(),
       EmbeddedDepth(),
       ModelComparison(),
       DepthModelSimulator(),
@@ -44,6 +45,7 @@ public struct SlideConfiguration {
       BeforeAfterResults(),
       Summary(),
       ToneCraftAnnounce(),
+      HandmadeLens(),
       ReferenceBook(),
       DepthOtherUseCases(),
       DepthBackgroundRemovalDemo(),

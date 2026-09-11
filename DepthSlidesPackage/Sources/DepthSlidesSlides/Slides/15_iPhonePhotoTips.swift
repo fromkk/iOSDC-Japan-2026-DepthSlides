@@ -33,7 +33,7 @@ struct IPhonePhotoTips: View {
         columnLabel
 
         // 自動折り返しだと「ぼか／す方法」で割れるので改行位置を指定する
-        Text("iPhone でも\n背景をぼかす方法")
+        Text("スマホでも\n背景をぼかす方法")
           .font(.system(size: 80, weight: .bold))
           .lineSpacing(8)
           .foregroundStyle(slideTheme.primaryTextColor)

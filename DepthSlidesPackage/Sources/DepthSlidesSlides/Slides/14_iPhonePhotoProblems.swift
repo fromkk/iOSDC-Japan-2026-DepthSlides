@@ -20,7 +20,7 @@ struct IPhonePhotoProblems: View {
       // 72pt のタイトルが 2 行に折り返す。
       HStack(alignment: .top, spacing: 60) {
         VStack(alignment: .leading, spacing: 44) {
-          Text("iPhone で撮影した写真の問題点")
+          Text("スマホで撮影した写真の問題点")
             .font(theme.headingH2Font)
             .foregroundStyle(theme.primaryTextColor)
             .fixedSize(horizontal: false, vertical: true)
@@ -43,7 +43,7 @@ struct IPhonePhotoProblems: View {
   }
 
   var script: String = """
-    ここまでの話を踏まえて、iPhone で撮影した写真を見てみると、センサーが小さいので被写界深度が深く、ボケにくいという特徴があります。
+    ここまでの話を踏まえて、スマホで撮影した写真を見てみると、センサーが小さいので被写界深度が深く、ボケにくいという特徴があります。
     さらに全体をはっきり写すことに特化した絵作りなので、最初のひまわりのように主題が背景に埋もれて、情報量の多い写真になりがちです。
     """
 
