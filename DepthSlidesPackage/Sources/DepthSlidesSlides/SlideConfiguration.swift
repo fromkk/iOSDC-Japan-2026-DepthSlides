@@ -45,6 +45,7 @@ public struct SlideConfiguration {
       BeforeAfterResults(),
       Summary(),
       ToneCraftAnnounce(),
+      HandmadeLens(),
       ReferenceBook(),
       DepthOtherUseCases(),
       DepthBackgroundRemovalDemo(),
