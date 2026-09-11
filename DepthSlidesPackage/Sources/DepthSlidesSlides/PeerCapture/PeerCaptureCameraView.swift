@@ -1,5 +1,6 @@
 #if os(iOS)
   import AVFoundation
+  import AVKit
   import SwiftUI
   import UIKit
 
@@ -23,6 +24,10 @@
     // 実機検証で分かった。そのため実際にDepthが使える範囲から動的にプリセットを作る。
     @State private var depthSafeFocalLengthRange: ClosedRange<CGFloat>?
     @State private var selectedFocalLengthMM: CGFloat?
+    /// カメラコントロールの UI が全画面表示になっているあいだは true。
+    /// Apple のガイドラインに従い、このあいだは自前のシャッターや焦点距離ピッカーを
+    /// 隠してプレビューを遮らないようにする。
+    @State private var isCameraControlFullscreen = false
 
     var body: some View {
       ZStack {
@@ -41,6 +46,8 @@
           CameraPreviewView(cameraSession: session)
             .ignoresSafeArea()
         }
+
+        captureEventReceiver
 
         VStack {
           HStack {
@@ -116,6 +123,8 @@
             .padding(.bottom, 40)
           }
         }
+        .opacity(isCameraControlFullscreen ? 0 : 1)
+        .animation(.easeInOut(duration: 0.2), value: isCameraControlFullscreen)
       }
       .task {
         do {
@@ -126,13 +135,16 @@
           // 合わせられているが、それは丸めていない生の値なのでプリセット(丸めた値)とは
           // 一致しない。プリセットのうち最初の1つ(下限に最も近いもの)へ実際に
           // 合わせ直し、UIの選択状態とも揃える。
+          var presets: [CGFloat] = []
           if let range = session.depthSafeFocalLengthRangeMM {
             depthSafeFocalLengthRange = range
-            if let firstPreset = focalLengthPresets(for: range).first {
+            presets = focalLengthPresets(for: range)
+            if let firstPreset = presets.first {
               selectedFocalLengthMM = firstPreset
               session.setZoom(toFocalLengthMM: firstPreset)
             }
           }
+          configureCameraControls(focalLengths: presets)
         } catch {
           configurationError = "Depth撮影に対応したカメラが見つかりませんでした"
         }
@@ -148,6 +160,31 @@
         session.stopRunning()
         previewForwardingTask?.cancel()
       }
+    }
+
+    /// iPhone 16 以降のカメラコントロール(本体側面のボタン)。軽く押すと露出補正と
+    /// 焦点距離のコントロールが出て、押し込むとシャッターが切れる。
+    /// 焦点距離は画面内のプリセットと同じ「Depth を保てる値」だけを出す。
+    private func configureCameraControls(focalLengths: [CGFloat]) {
+      guard session.supportsCameraControls else { return }
+      session.onControlsFullscreenAppearanceChanged = { isFullscreen in
+        isCameraControlFullscreen = isFullscreen
+      }
+      session.onFocalLengthSelectedFromControl = { millimeters in
+        selectedFocalLengthMM = millimeters
+      }
+      session.configureCameraControls(focalLengthsMM: focalLengths, selectedIndex: 0)
+    }
+
+    /// ハードウェアシャッター(カメラコントロールの押し込み、音量ボタン)を受ける
+    /// 透明なビュー。撮影済みプレビューを出しているあいだは無効にして、
+    /// システム標準のボタン動作へ戻す(`AVCaptureEventInteraction` のドキュメントが
+    /// 「反応できないときは isEnabled を false にせよ」と明示している)。
+    private var captureEventReceiver: some View {
+      CaptureEventReceiver(isEnabled: capturedData == nil && configurationError == nil) {
+        Task { await capturePhoto() }
+      }
+      .allowsHitTesting(false)
     }
 
     /// Feature B: 撮影中のライブ映像を、Feature Aで既に確立済みの同期コネクションに
@@ -295,6 +332,44 @@
             animations: { indicator.alpha = 0 },
             completion: { _ in indicator.removeFromSuperview() })
         })
+    }
+  }
+
+  /// `AVCaptureEventInteraction` を載せるだけの透明なビュー。SwiftUI に同等の
+  /// 修飾子が無いため UIKit の interaction を直接使う。
+  private struct CaptureEventReceiver: UIViewRepresentable {
+    var isEnabled: Bool
+    var onCapture: () -> Void
+
+    func makeUIView(context: Context) -> UIView {
+      let view = UIView()
+      view.isUserInteractionEnabled = false
+      view.backgroundColor = .clear
+
+      let coordinator = context.coordinator
+      coordinator.onCapture = onCapture
+      // 押し始め(.began)でも呼ばれるので、押し終わりだけを拾って二重撮影を避ける。
+      let interaction = AVCaptureEventInteraction { event in
+        guard event.phase == .ended else { return }
+        Task { @MainActor in coordinator.onCapture?() }
+      }
+      interaction.isEnabled = isEnabled
+      view.addInteraction(interaction)
+      coordinator.interaction = interaction
+      return view
+    }
+
+    func updateUIView(_ uiView: UIView, context: Context) {
+      context.coordinator.onCapture = onCapture
+      context.coordinator.interaction?.isEnabled = isEnabled
+    }
+
+    func makeCoordinator() -> Coordinator { Coordinator() }
+
+    @MainActor
+    final class Coordinator {
+      var interaction: AVCaptureEventInteraction?
+      var onCapture: (() -> Void)?
     }
   }
 #endif

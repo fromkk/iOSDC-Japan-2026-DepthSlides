@@ -302,6 +302,86 @@
       return best
     }
 
+    // MARK: - Camera Control(iPhone 16 以降の本体側面のボタン)
+
+    /// カメラコントロール関連のコールバックが流れるシリアルキュー。
+    /// `setControlsDelegate(_:queue:)` と `AVCaptureIndexPicker` の action の両方で使う。
+    /// どちらも MainActor ではないので、UI や `activeDevice` に触る処理は
+    /// コールバックの中で MainActor へ渡し直す。
+    private let controlsQueue = DispatchQueue(
+      label: "info.fromkk.DepthSlides.peercapture.controls")
+
+    /// コントロールの UI が全画面表示に入った / 出たときに呼ばれる。
+    /// Apple のガイドラインどおり、全画面のあいだ View は自前のシャッターや
+    /// 焦点距離ピッカーを隠してプレビューを遮らないようにする。
+    var onControlsFullscreenAppearanceChanged: ((Bool) -> Void)?
+
+    /// カメラコントロールのピッカーで焦点距離が選び直されたときに呼ばれる。
+    /// 画面内のプリセット選択状態を追従させるために View が受け取る。
+    var onFocalLengthSelectedFromControl: ((CGFloat) -> Void)?
+
+    /// この端末でカメラコントロールが使えるか。
+    var supportsCameraControls: Bool { session.supportsControls }
+
+    /// カメラコントロールに載せるコントロールを組み立てる。
+    ///
+    /// ズームには `AVCaptureSystemZoomSlider` を使わない。あれは
+    /// `videoZoomFactor` を連続的に動かすので、`supportedVideoZoomRangesForDepthDataDelivery`
+    /// の外まで簡単に出てしまい、この画面の前提である「Depth が必ず埋め込まれた写真」が
+    /// 撮れなくなる。代わりに画面内と同じ Depth 安全な焦点距離プリセットを
+    /// `AVCaptureIndexPicker` として出す。
+    func configureCameraControls(focalLengthsMM: [CGFloat], selectedIndex: Int) {
+      guard session.supportsControls, let device = activeDevice else {
+        logger.log("configureCameraControls: この端末ではカメラコントロールを使えない")
+        return
+      }
+
+      session.setControlsDelegate(self, queue: controlsQueue)
+
+      session.beginConfiguration()
+      defer { session.commitConfiguration() }
+
+      for control in session.controls {
+        session.removeControl(control)
+      }
+
+      var candidates: [AVCaptureControl] = []
+
+      // プリセットが 1 つしか無い(= Depth を保ったまま画角を選べない)機種では
+      // 選択肢にならないので出さない。
+      if focalLengthsMM.count > 1 {
+        let picker = AVCaptureIndexPicker(
+          "焦点距離",
+          symbolName: "camera.aperture",
+          localizedIndexTitles: focalLengthsMM.map { "\(Int($0.rounded()))mm" }
+        )
+        picker.setActionQueue(controlsQueue) { [weak self] index in
+          guard focalLengthsMM.indices.contains(index) else { return }
+          let millimeters = focalLengthsMM[index]
+          Task { @MainActor in
+            guard let self else { return }
+            self.setZoom(toFocalLengthMM: millimeters)
+            self.onFocalLengthSelectedFromControl?(millimeters)
+          }
+        }
+        // `selectedIndex` は action と同じキューから触ること、とドキュメントにある。
+        let initialIndex = min(max(selectedIndex, 0), focalLengthsMM.count - 1)
+        controlsQueue.async { picker.selectedIndex = initialIndex }
+        candidates.append(picker)
+      }
+
+      // 露出補正は Depth 配信に影響しないので、システム提供のものをそのまま載せる。
+      candidates.append(AVCaptureSystemExposureBiasSlider(device: device))
+
+      for control in candidates.prefix(session.maxControlsCount)
+      where session.canAddControl(control) {
+        session.addControl(control)
+      }
+      logger.log(
+        "configureCameraControls: \(self.session.controls.count, privacy: .public) 個のコントロールを追加した(最大 \(self.session.maxControlsCount, privacy: .public))"
+      )
+    }
+
     func startRunning() {
       let box = sessionBox
       Task.detached(priority: .userInitiated) {
@@ -486,6 +566,24 @@
         }
         continuation.resume(returning: data)
       }
+    }
+  }
+
+  /// カメラコントロールの状態を View へ中継するだけの実装。コールバックは
+  /// `controlsQueue` 上で来るので、そのたびに MainActor へ渡し直す。
+  extension PeerCaptureCameraSession: AVCaptureSessionControlsDelegate {
+    nonisolated func sessionControlsDidBecomeActive(_ session: AVCaptureSession) {}
+
+    nonisolated func sessionControlsWillEnterFullscreenAppearance(_ session: AVCaptureSession) {
+      Task { @MainActor in self.onControlsFullscreenAppearanceChanged?(true) }
+    }
+
+    nonisolated func sessionControlsWillExitFullscreenAppearance(_ session: AVCaptureSession) {
+      Task { @MainActor in self.onControlsFullscreenAppearanceChanged?(false) }
+    }
+
+    nonisolated func sessionControlsDidBecomeInactive(_ session: AVCaptureSession) {
+      Task { @MainActor in self.onControlsFullscreenAppearanceChanged?(false) }
     }
   }
 #endif
