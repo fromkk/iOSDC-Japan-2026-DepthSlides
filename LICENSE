@@ -1,0 +1,89 @@
+DepthSlides License
+Copyright (c) 2026 Kazuya Ueoka (fromkk)
+
+--------------------------------------------------------------------------------
+日本語
+--------------------------------------------------------------------------------
+
+本リポジトリに含まれるソースコード、スライド、写真・動画・図版などの素材（以下
+「本件資料」といいます）の著作権は作者に帰属します。本件資料はオープンソースでは
+なく、以下の条件でのみ利用を許諾します。
+
+■ 許可されること
+
+- 本リポジトリの閲覧、および自身の端末へのダウンロード・複製
+- 自身の端末上でのビルド、インストール、実行
+- 私的な範囲での改変（自分の手元で動かすための修正など）
+- 内容を学習・参考にすること、および著作権法上の引用の範囲での引用
+
+■ 禁止されること
+
+- 本件資料の全部または一部の再配布、再頒布、公開（改変したものを含む）
+- 本件資料をビルドしたバイナリ、アプリ、パッケージ等を第三者に提供すること
+  （App Store 等のストアへの提出を含む）
+- 作者以外の者が、本件資料の全部または一部を発表、上映、講演、配信等に使用すること
+- 商用利用
+
+■ 補足
+
+- GitHub の利用規約に基づき、GitHub 上でのフォークおよび GitHub のサービス内での
+  閲覧・複製は許容されます。本ライセンスはそれを妨げるものではありません。
+- 上記の範囲を超える利用を希望する場合は、作者にお問い合わせください。
+
+■ 第三者の著作物
+
+本件資料が利用する SlideKit、swift-markdown 等のライブラリ、および `scripts/` で
+取得・変換する Core ML モデルには、それぞれの配布元のライセンス・利用規約が適用
+されます。これらは本ライセンスの対象ではありません。
+
+■ 免責
+
+本件資料は「現状有姿」で提供され、明示・黙示を問わずいかなる保証も伴いません。
+本件資料の使用または使用不能から生じるいかなる損害についても、作者は責任を負い
+ません。
+
+--------------------------------------------------------------------------------
+English
+--------------------------------------------------------------------------------
+
+All rights in the source code, slides, photographs, videos, diagrams and other
+materials contained in this repository (the "Materials") are reserved by the
+author. The Materials are not open source. Permission is granted only under the
+following terms.
+
+■ You MAY
+
+- View the repository, and download and copy it to your own devices.
+- Build, install and run the Materials on your own devices.
+- Modify the Materials for your own private use.
+- Study and learn from the Materials, and quote them to the extent permitted by
+  applicable copyright law.
+
+■ You MAY NOT
+
+- Redistribute, republish or otherwise make available the Materials, in whole or
+  in part, whether modified or unmodified.
+- Provide binaries, applications or packages built from the Materials to third
+  parties (including submission to the App Store or any other store).
+- Use the Materials, in whole or in part, in a talk, screening, lecture, stream
+  or any other presentation given by anyone other than the author.
+- Use the Materials for commercial purposes.
+
+■ Notes
+
+- Forking on GitHub, and viewing or copying within GitHub's own services, is
+  permitted under the GitHub Terms of Service; this license does not restrict it.
+- For any use beyond the scope above, please contact the author.
+
+■ Third-party materials
+
+Libraries used by the Materials (such as SlideKit and swift-markdown) and the
+Core ML models downloaded or converted by the scripts in `scripts/` are governed
+by their own licenses and terms of use, and are not covered by this license.
+
+■ Disclaimer
+
+THE MATERIALS ARE PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY ARISING FROM, OUT OF OR IN CONNECTION WITH THE MATERIALS OR THE USE OR
+OTHER DEALINGS IN THE MATERIALS.
