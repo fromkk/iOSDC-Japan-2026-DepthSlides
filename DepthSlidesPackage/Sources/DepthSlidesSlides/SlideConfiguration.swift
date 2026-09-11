@@ -20,6 +20,7 @@ public struct SlideConfiguration {
       PhotoComparison(),
       GoalSlide(),
       ProfileSlide(),
+      HistorySlide(),
       AnnounceSlide(),
       // 第1幕: なぜ iPhone はボケないか
       CameraObscuraOrigin(),
