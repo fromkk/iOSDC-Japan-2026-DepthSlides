@@ -90,7 +90,8 @@ struct ModelComparison: View {
     case .spec:
       return """
         まずスペックを比較してみます。リリースの古い順に並べると、そのまま深度推定の進化の歴史になっています。2020年の CNN ベースの MiDaS から、ViT ベースになった Depth Anything V2、高解像・高精度に振った Apple の Depth Pro、そして複数視点にも対応した3D基盤モデルの Depth Anything 3 という流れです。V2 は香港大学と TikTok の共同ですが、3 は ByteDance Seed 単独で、名前も V が取れて Depth Anything 3 になっています。
-        注目してほしいのはモデルサイズで、Depth Pro だけ 1.8GB と桁が2つ違います。他の3つは 32〜61MB に収まっているので、アプリに同梱することを考えると、この差はかなり効いてきます。
+        注目してほしいのはモデルサイズで、Depth Pro だけ 1.8GB と桁が2つ違います。他の3つは 32〜61MB に収まっているので、アプリに同梱することを考えると、この差はかなり効いてきます。実際 Depth Pro は iPhone だと実行時のメモリ上限に引っかかって動かせず、今回は Mac でだけ動かしています。
+        なお、どのモデルも配布されているのは PyTorch や ONNX の形式なので、Core ML で使うには変換が必要です。WWDC26 で発表された後継の Core AI でも同じです。
         """
     case .depthType:
       return """

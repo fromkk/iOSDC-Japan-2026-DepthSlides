@@ -27,7 +27,7 @@ public enum BokehBeforeAfterRenderer {
     }
   }
 
-  /// スライドで採用したモデル・フィルター。`22_Summary` の記述と揃えること。
+  /// スライドで採用したモデル・フィルター。`24_Summary` の記述と揃えること。
   static let model: DepthModel = .depthAnythingV3Small
   static let filter: BokehFilterKind = .bokehBlur
 

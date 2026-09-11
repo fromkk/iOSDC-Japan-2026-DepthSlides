@@ -8,7 +8,7 @@ import Foundation
 /// equation to meet at the same image point.
 struct LensScene: Equatable {
   var focalLength: CGFloat = 60
-  var objectDistance: CGFloat = 120
+  var objectDistance: CGFloat = 140
   var objectHeight: CGFloat = 40
   var lensToScreenDistance: CGFloat = 120
 

@@ -36,7 +36,6 @@ public struct SlideConfiguration {
       DepthSectionDivider(),
       EmbeddedDepth(),
       ModelComparison(),
-      ModelUsageNotes(),
       DepthModelSimulator(),
       BokehSectionDivider(),
       BokehBlurComparison(),
